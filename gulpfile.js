@@ -6,7 +6,7 @@ gulp.task('build', function() {
   return files.pipe(gulp.dest('build'))
 });
 
-gulp.task('publish', ['build'], function() {
+gulp.task('publish', function() {
   var concurrent = require('concurrent-transform');
   var awspublish = require('gulp-awspublish');
   var AWS = require('aws-sdk');
