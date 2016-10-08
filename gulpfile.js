@@ -7,14 +7,14 @@ AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'}
 
 var API_ID = '1jxogzz6a3';
 
-gulp.task('validate', function(cb) {
+gulp.task('validate-api', function(cb) {
   var exec = require('child_process').exec;
   exec('./node_modules/swagger-tools/bin/swagger-tools validate ./src/api/schema.yaml', function (err, stdout, stderr) {
     cb(err);
   });
 });
 
-gulp.task('build', function() {
+gulp.task('build-front', function() {
   var files = gulp.src(['src/front/index.html']);
   return files.pipe(gulp.dest('build'))
 });
@@ -48,7 +48,7 @@ gulp.task('deploy-api', function (cb) {
   }));
 });
 
-gulp.task('publish', function() {
+gulp.task('publish-front', function() {
   var concurrent = require('concurrent-transform');
   var awspublish = require('gulp-awspublish');
   var AWS = require('aws-sdk');
