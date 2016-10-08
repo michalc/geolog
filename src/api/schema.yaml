@@ -1,0 +1,79 @@
+swagger: '2.0'
+
+info:
+  version: "0.0.1"
+  title: geolog api
+
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+  /tracks:
+    post:
+      description: Create a track
+      responses:
+        "202":
+          description: Response redirecting client to job
+          headers:
+            location:
+              description: The location of the job to query for progress of the creation of the track
+              type: string
+
+  /tracks/{id}:
+    get:
+      description: Get a track
+      parameters:
+        - in: path
+          name: id
+          description: ID of the track
+          required: true
+          type: string
+          format: string
+      responses:
+        200:
+          description: Track
+          schema:
+            $ref: "#/definitions/track"
+
+  /jobs/{id}:
+    get:
+      description: Get an in-progress job
+      parameters:
+        - in: path
+          name: id
+          description: ID of the job
+          required: true
+          type: string
+          format: string
+      responses:
+        200:
+          description: Job
+          schema:
+            $ref: "#/definitions/job"
+
+definitions:
+  track:
+    type: object
+    properties:
+      id:
+        type: string
+        format: string
+      type:
+        type: string
+        format: string
+      url:
+        type: string
+        format: string
+        description: Location of the track
+  job:
+    type: object
+    properties:
+      id:
+        type: string
+        format: string
+      status:
+        type: string
+        format: string
+        description: Status of the job

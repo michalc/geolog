@@ -2,7 +2,7 @@ var gulp = require('gulp');
 var BUILD_DIR = 'build';
 
 gulp.task('build', function() {
-  var files = gulp.src(['src/index.html']);
+  var files = gulp.src(['src/front/index.html']);
   return files.pipe(gulp.dest('build'))
 });
 
