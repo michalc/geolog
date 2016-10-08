@@ -1,6 +1,13 @@
 var gulp = require('gulp');
 var BUILD_DIR = 'build';
 
+gulp.task('validate', function(cb) {
+  var exec = require('child_process').exec;
+  exec('./node_modules/swagger-tools/bin/swagger-tools validate ./src/api/schema.yaml', function (err, stdout, stderr) {
+    cb(err);
+  });
+});
+
 gulp.task('build', function() {
   var files = gulp.src(['src/front/index.html']);
   return files.pipe(gulp.dest('build'))
