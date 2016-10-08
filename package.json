@@ -1,0 +1,11 @@
+{
+  "description": "Source for geolog.co",
+  "license": "UNLICENSED",
+  "repository": "https://github.com/michalc/geolog",
+  "dependencies": {
+    "aws-sdk": "^2.6.7",
+    "concurrent-transform": "^1.0.0",
+    "gulp": "^3.9.1",
+    "gulp-awspublish": "^3.3.0"
+  }
+}
