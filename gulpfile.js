@@ -48,7 +48,7 @@ gulp.task('deploy-api', function (cb) {
   }));
 });
 
-gulp.task('publish-front', function() {
+gulp.task('deploy-front', function() {
   var concurrent = require('concurrent-transform');
   var awspublish = require('gulp-awspublish');
   var AWS = require('aws-sdk');
