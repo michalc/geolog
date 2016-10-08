@@ -52,6 +52,12 @@ paths:
           description: Job
           schema:
             $ref: "#/definitions/job"
+        303:
+          description: Redirection to completed resource
+          headers:
+            location:
+              description: The location of the created resource
+              type: string
 
 definitions:
   track:
