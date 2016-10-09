@@ -19,6 +19,37 @@ gulp.task('build-front', function() {
   return files.pipe(gulp.dest('build'))
 });
 
+gulp.task('deploy-lambda', function (cb) {
+  var stream = require('stream');
+  var lambda = new AWS.Lambda();
+  var zip = require('gulp-zip');
+
+  function putFunction(contents, cb) {
+    lambda.updateFunctionCode({
+      Publish: true,
+      FunctionName: 'geolog',
+      ZipFile: contents
+    }, function(err, data) {
+      if (err) {
+        console.log(err, err.stack);
+      }
+      cb(err)
+    });
+  }
+
+  var files = gulp.src(['src/back/endpoint.js']);
+  return files
+    .pipe(zip('endpoint.zip'))
+    .pipe(stream.Transform({
+      objectMode: true,
+      transform: function(file, enc, cb) {
+        putFunction(file.contents, cb)
+        this.push(file);
+        cb();
+      }
+    }));
+});
+
 gulp.task('deploy-api', function (cb) {
   var stream = require('stream');
   var apigateway = new AWS.APIGateway();
@@ -79,4 +110,4 @@ gulp.task('deploy-front', function() {
     .pipe(awspublish.reporter());
 });
 
-gulp.task('default', ['build']);
+gulp.task('default', ['build-front']);
