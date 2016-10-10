@@ -15,16 +15,16 @@ exports.handler = (event, context, callback) => {
 
     switch (event.httpMethod) {
         case 'DELETE':
-        	done(null, 'done!');
-            break;
+        	done(null, 'done4!');
+            break;  
         case 'GET':
-        	done(null, 'done!');
+        	done(null, 'done4!');
             break;
         case 'POST':
-        	done(null, 'done!');
+        	done(null, 'done4!');
             break;
         case 'PUT':
-        	done(null, 'done!');
+        	done(null, 'done4!');
             break;
         default:
             done(new Error(`Unsupported method "${event.httpMethod}"`));

@@ -1,7 +1,9 @@
+var AWS = require('aws-sdk');
 var gulp = require('gulp');
+var Promise = require("bluebird");
+
 var BUILD_DIR = 'build';
 
-var AWS = require('aws-sdk');
 AWS.config.region = 'eu-west-1';
 AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'});
 
@@ -54,17 +56,17 @@ gulp.task('deploy-api', function (cb) {
   var stream = require('stream');
   var apigateway = new AWS.APIGateway();
 
-  function putApi(yaml, cb) {
-    apigateway.putRestApi({
+  function putApi(yaml) {
+    return apigateway.putRestApi({
       body: yaml,
       restApiId: API_ID,
       mode: 'overwrite',
       failOnWarnings: true
-    }, function(err, data) {
-      if (err) {
-        console.log(err, err.stack);
-      }
-      cb(err)
+    }).promise().then(function(api) {
+      return apigateway.createDeployment({
+        restApiId: API_ID,
+        stageName: 'prod',
+      }).promise();
     });
   }
 
@@ -72,9 +74,11 @@ gulp.task('deploy-api', function (cb) {
   return files.pipe(stream.Transform({
     objectMode: true,
     transform: function(file, enc, cb) {
-      putApi(file.contents, cb)
-      this.push(file);
-      cb();
+      putApi(file.contents).then(function(res) {
+        cb()
+      }, function(err) {
+        cb(err)
+      });
     }
   }));
 });
