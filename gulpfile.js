@@ -91,7 +91,7 @@ gulp.task('deploy-lambda', function() {
 });
 
 gulp.task('validate-api', function(cb) {
-  exec('npm bin swagger-tools validate ./src/api/schema.yaml', function (err, stdout, stderr) {
+  exec('npm bin swagger-tools validate src/api/schema.yaml', function (err, stdout, stderr) {
     cb(err);
   });
 });
