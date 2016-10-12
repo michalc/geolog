@@ -19,17 +19,32 @@ const LAMBDA_NAME = 'geolog'
 const LAMBDA_ALIAS = 'prod'
 const BUILD_DIR = 'build';
 const API_GATEWAY_ID = '1jxogzz6a3';
+const API_GATEWAY_STAGE = 'prod';
 
-function updateFunctionCodeAndAlias(zippedCode, functionName, functionAlias) {
+function updateFunctionCodeAndAlias(zippedCode) {
   return lambda.updateFunctionCode({
     Publish: true,
     FunctionName: 'geolog',
     ZipFile: zippedCode
   }).promise().then(function(resource) {
     return lambda.updateAlias({
-      FunctionName: functionName,
+      FunctionName: LAMBDA_NAME,
       FunctionVersion: resource.Version,
-      Name: functionAlias
+      Name: LAMBDA_ALIAS
+    }).promise();
+  });
+}
+
+function putAndDeployApi(schema) {
+  return apigateway.putRestApi({
+    body: schema,
+    restApiId: API_GATEWAY_ID,
+    mode: 'overwrite',
+    failOnWarnings: true
+  }).promise().then(function(api) {
+    return apigateway.createDeployment({
+      restApiId: API_GATEWAY_ID,
+      stageName: API_GATEWAY_STAGE,
     }).promise();
   });
 }
@@ -52,7 +67,7 @@ gulp.task('deploy-lambda', function(cb) {
     .pipe(stream.Transform({
       objectMode: true,
       transform: function(file, enc, cb) {
-        updateFunctionCodeAndAlias(file.contents, LAMBDA_NAME, LAMBDA_ALIAS).then(function() {
+        updateFunctionCodeAndAlias(file.contents).then(function() {
           cb();
         }, function(err) {
           cb(err);
@@ -68,25 +83,11 @@ gulp.task('validate-api', function(cb) {
 });
 
 gulp.task('deploy-api', function (cb) {
-  function putApi(yaml) {
-    return apigateway.putRestApi({
-      body: yaml,
-      restApiId: API_GATEWAY_ID,
-      mode: 'overwrite',
-      failOnWarnings: true
-    }).promise().then(function(api) {
-      return apigateway.createDeployment({
-        restApiId: API_GATEWAY_ID,
-        stageName: 'prod',
-      }).promise();
-    });
-  }
-
   const files = gulp.src(['src/api/schema.yaml']);
   return files.pipe(stream.Transform({
     objectMode: true,
     transform: function(file, enc, cb) {
-      putApi(file.contents).then(function(res) {
+      putAndDeployApi(file.contents).then(function() {
         cb()
       }, function(err) {
         cb(err)
@@ -94,7 +95,6 @@ gulp.task('deploy-api', function (cb) {
     }
   }));
 });
-
 
 gulp.task('build-front', function() {
   const files = gulp.src(['src/front/index.html']);
