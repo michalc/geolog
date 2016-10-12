@@ -28,11 +28,6 @@ gulp.task('validate-api', function(cb) {
   });
 });
 
-gulp.task('build-front', function() {
-  var files = gulp.src(['src/front/index.html']);
-  return files.pipe(gulp.dest('build'))
-});
-
 gulp.task('deploy-lambda', function(cb) {
   var stream = require('stream');
   var lambda = new AWS.Lambda();
@@ -96,6 +91,12 @@ gulp.task('deploy-api', function (cb) {
       });
     }
   }));
+});
+
+
+gulp.task('build-front', function() {
+  var files = gulp.src(['src/front/index.html']);
+  return files.pipe(gulp.dest('build'))
 });
 
 gulp.task('deploy-front', function() {
