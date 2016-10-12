@@ -1,16 +1,18 @@
-var AWS = require('aws-sdk');
-var gulp = require('gulp');
+'use strict';
 
-var BUILD_DIR = 'build';
+const AWS = require('aws-sdk');
+const gulp = require('gulp');
+
+const BUILD_DIR = 'build';
 
 AWS.config.region = 'eu-west-1';
 AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'});
 
-var API_ID = '1jxogzz6a3';
+const API_ID = '1jxogzz6a3';
 
 // One-time task
 gulp.task('permit-lambda', function(cb) {
-  var lambda = new AWS.Lambda();
+  const lambda = new AWS.Lambda();
 
   return lambda.addPermission({
     Action: 'lambda:InvokeFunction',
@@ -22,9 +24,9 @@ gulp.task('permit-lambda', function(cb) {
 });
 
 gulp.task('deploy-lambda', function(cb) {
-  var stream = require('stream');
-  var lambda = new AWS.Lambda();
-  var zip = require('gulp-zip');
+  const stream = require('stream');
+  const lambda = new AWS.Lambda();
+  const zip = require('gulp-zip');
 
   function putFunction(contents) {
     return lambda.updateFunctionCode({
@@ -40,7 +42,7 @@ gulp.task('deploy-lambda', function(cb) {
     });
   }
 
-  var files = gulp.src(['src/back/endpoint.js']);
+  const files = gulp.src(['src/back/endpoint.js']);
   return files
     .pipe(zip('endpoint.zip'))
     .pipe(stream.Transform({
@@ -56,15 +58,15 @@ gulp.task('deploy-lambda', function(cb) {
 });
 
 gulp.task('validate-api', function(cb) {
-  var exec = require('child_process').exec;
+  const exec = require('child_process').exec;
   exec('./node_modules/swagger-tools/bin/swagger-tools validate ./src/api/schema.yaml', function (err, stdout, stderr) {
     cb(err);
   });
 });
 
 gulp.task('deploy-api', function (cb) {
-  var stream = require('stream');
-  var apigateway = new AWS.APIGateway();
+  const stream = require('stream');
+  const apigateway = new AWS.APIGateway();
 
   function putApi(yaml) {
     return apigateway.putRestApi({
@@ -80,7 +82,7 @@ gulp.task('deploy-api', function (cb) {
     });
   }
 
-  var files = gulp.src(['src/api/schema.yaml']);
+  const files = gulp.src(['src/api/schema.yaml']);
   return files.pipe(stream.Transform({
     objectMode: true,
     transform: function(file, enc, cb) {
@@ -95,15 +97,15 @@ gulp.task('deploy-api', function (cb) {
 
 
 gulp.task('build-front', function() {
-  var files = gulp.src(['src/front/index.html']);
+  const files = gulp.src(['src/front/index.html']);
   return files.pipe(gulp.dest('build'))
 });
 
 gulp.task('deploy-front', function() {
-  var concurrent = require('concurrent-transform');
-  var awspublish = require('gulp-awspublish');
+  const concurrent = require('concurrent-transform');
+  const awspublish = require('gulp-awspublish');
 
-  var publisher = awspublish.create({
+  const publisher = awspublish.create({
     region: 'eu-west-1',
     params: {
       Bucket: 'geolog.co'
@@ -118,7 +120,7 @@ gulp.task('deploy-front', function() {
   }
 
   // Cache 5 mins + gzip
-  var index = gulp.src('index.html', {cwd: BUILD_DIR})
+  const index = gulp.src('index.html', {cwd: BUILD_DIR})
     .pipe(awspublish.gzip())
     .pipe(publish({
       'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public'
