@@ -8,18 +8,7 @@ AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'}
 
 var API_ID = '1jxogzz6a3';
 
-gulp.task('validate-api', function(cb) {
-  var exec = require('child_process').exec;
-  exec('./node_modules/swagger-tools/bin/swagger-tools validate ./src/api/schema.yaml', function (err, stdout, stderr) {
-    cb(err);
-  });
-});
-
-gulp.task('build-front', function() {
-  var files = gulp.src(['src/front/index.html']);
-  return files.pipe(gulp.dest('build'))
-});
-
+// One-time task
 gulp.task('permit-lambda', function(cb) {
   var lambda = new AWS.Lambda();
 
@@ -30,6 +19,18 @@ gulp.task('permit-lambda', function(cb) {
     StatementId: 'api-gateway',
     Qualifier: 'prod'
   }).promise();
+});
+
+gulp.task('validate-api', function(cb) {
+  var exec = require('child_process').exec;
+  exec('./node_modules/swagger-tools/bin/swagger-tools validate ./src/api/schema.yaml', function (err, stdout, stderr) {
+    cb(err);
+  });
+});
+
+gulp.task('build-front', function() {
+  var files = gulp.src(['src/front/index.html']);
+  return files.pipe(gulp.dest('build'))
 });
 
 gulp.task('deploy-lambda', function(cb) {
@@ -100,7 +101,6 @@ gulp.task('deploy-api', function (cb) {
 gulp.task('deploy-front', function() {
   var concurrent = require('concurrent-transform');
   var awspublish = require('gulp-awspublish');
-  var AWS = require('aws-sdk');
 
   var publisher = awspublish.create({
     region: 'eu-west-1',
