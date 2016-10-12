@@ -4,16 +4,15 @@ const AWS = require('aws-sdk');
 const gulp = require('gulp');
 
 const BUILD_DIR = 'build';
+const API_GATEWAY_ID = '1jxogzz6a3';
 
 AWS.config.region = 'eu-west-1';
 AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'});
-
-const API_ID = '1jxogzz6a3';
+const apigateway = new AWS.APIGateway();
+const lambda = new AWS.Lambda();
 
 // One-time task
-gulp.task('permit-lambda', function(cb) {
-  const lambda = new AWS.Lambda();
-
+gulp.task('permit-lambda', function() {
   return lambda.addPermission({
     Action: 'lambda:InvokeFunction',
     FunctionName: 'geolog',
@@ -25,7 +24,6 @@ gulp.task('permit-lambda', function(cb) {
 
 gulp.task('deploy-lambda', function(cb) {
   const stream = require('stream');
-  const lambda = new AWS.Lambda();
   const zip = require('gulp-zip');
 
   function putFunction(contents) {
@@ -66,17 +64,16 @@ gulp.task('validate-api', function(cb) {
 
 gulp.task('deploy-api', function (cb) {
   const stream = require('stream');
-  const apigateway = new AWS.APIGateway();
 
   function putApi(yaml) {
     return apigateway.putRestApi({
       body: yaml,
-      restApiId: API_ID,
+      restApiId: API_GATEWAY_ID,
       mode: 'overwrite',
       failOnWarnings: true
     }).promise().then(function(api) {
       return apigateway.createDeployment({
-        restApiId: API_ID,
+        restApiId: API_GATEWAY_ID,
         stageName: 'prod',
       }).promise();
     });
