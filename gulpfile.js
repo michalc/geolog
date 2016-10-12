@@ -49,6 +49,29 @@ function putAndDeployApi(schema) {
   });
 }
 
+// Returns a function that calls the original,
+// calling the cb on promise success/failure as appropriate
+function callbackIfy(original, cb) {
+  return function() {
+    original.apply(this, arguments).then(function(result) {
+      cb();
+    }, function(err) {
+      cb(err || true);
+    });
+  }
+}
+
+// Returns a transform stream that calls (a callbackIfied version of)
+// the original function for each file contents in the stream
+function streamIfy(original) {
+  return stream.Transform({
+    objectMode: true,
+    transform: function(file, enc, cb) {
+      callbackIfy(original, cb)(file.contents);
+    }
+  });
+};
+
 // One-time task
 gulp.task('permit-lambda', function() {
   return lambda.addPermission({
@@ -60,20 +83,11 @@ gulp.task('permit-lambda', function() {
   }).promise();
 });
 
-gulp.task('deploy-lambda', function(cb) {
+gulp.task('deploy-lambda', function() {
   const files = gulp.src(['src/back/endpoint.js']);
   return files
     .pipe(zip('endpoint.zip'))
-    .pipe(stream.Transform({
-      objectMode: true,
-      transform: function(file, enc, cb) {
-        updateFunctionCodeAndAlias(file.contents).then(function() {
-          cb();
-        }, function(err) {
-          cb(err);
-        });
-      }
-    }));
+    .pipe(streamIfy(updateFunctionCodeAndAlias));
 });
 
 gulp.task('validate-api', function(cb) {
@@ -82,18 +96,9 @@ gulp.task('validate-api', function(cb) {
   });
 });
 
-gulp.task('deploy-api', function (cb) {
+gulp.task('deploy-api', function () {
   const files = gulp.src(['src/api/schema.yaml']);
-  return files.pipe(stream.Transform({
-    objectMode: true,
-    transform: function(file, enc, cb) {
-      putAndDeployApi(file.contents).then(function() {
-        cb()
-      }, function(err) {
-        cb(err)
-      });
-    }
-  }));
+  return files.pipe(streamIfy(putAndDeployApi));
 });
 
 gulp.task('build-front', function() {
