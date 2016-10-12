@@ -14,7 +14,7 @@ paths:
     post:
       x-amazon-apigateway-integration:
         type: aws_proxy
-        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog/invocations
+        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog:prod/invocations
         httpMethod: POST
       description: Create a track
       responses:
@@ -29,7 +29,7 @@ paths:
     get:
       x-amazon-apigateway-integration:
         type: aws_proxy
-        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog/invocations
+        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog:prod/invocations
         httpMethod: POST
       description: Get a track
       parameters:
@@ -49,7 +49,7 @@ paths:
     get:
       x-amazon-apigateway-integration:
         type: aws_proxy
-        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog/invocations
+        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog:prod/invocations
         httpMethod: POST
       description: Get an in-progress job
       parameters:

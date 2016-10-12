@@ -1,6 +1,5 @@
 var AWS = require('aws-sdk');
 var gulp = require('gulp');
-var Promise = require("bluebird");
 
 var BUILD_DIR = 'build';
 
@@ -21,21 +20,34 @@ gulp.task('build-front', function() {
   return files.pipe(gulp.dest('build'))
 });
 
-gulp.task('deploy-lambda', function (cb) {
+gulp.task('permit-lambda', function(cb) {
+  var lambda = new AWS.Lambda();
+
+  return lambda.addPermission({
+    Action: 'lambda:InvokeFunction',
+    FunctionName: 'geolog',
+    Principal: 'apigateway.amazonaws.com',
+    StatementId: 'api-gateway',
+    Qualifier: 'prod'
+  }).promise();
+});
+
+gulp.task('deploy-lambda', function(cb) {
   var stream = require('stream');
   var lambda = new AWS.Lambda();
   var zip = require('gulp-zip');
 
-  function putFunction(contents, cb) {
-    lambda.updateFunctionCode({
+  function putFunction(contents) {
+    return lambda.updateFunctionCode({
       Publish: true,
       FunctionName: 'geolog',
       ZipFile: contents
-    }, function(err, data) {
-      if (err) {
-        console.log(err, err.stack);
-      }
-      cb(err)
+    }).promise().then(function(resource) {
+      return lambda.updateAlias({
+        FunctionName: 'geolog',
+        FunctionVersion: resource.Version,
+        Name: 'prod'
+      }).promise();
     });
   }
 
@@ -45,9 +57,11 @@ gulp.task('deploy-lambda', function (cb) {
     .pipe(stream.Transform({
       objectMode: true,
       transform: function(file, enc, cb) {
-        putFunction(file.contents, cb)
-        this.push(file);
-        cb();
+        putFunction(file.contents).then(function() {
+          cb();
+        }, function(err) {
+          cb(err);
+        });
       }
     }));
 });
