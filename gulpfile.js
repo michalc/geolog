@@ -3,13 +3,13 @@
 const AWS = require('aws-sdk');
 const gulp = require('gulp');
 
-const BUILD_DIR = 'build';
-const API_GATEWAY_ID = '1jxogzz6a3';
-
 AWS.config.region = 'eu-west-1';
 AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'});
 const apigateway = new AWS.APIGateway();
 const lambda = new AWS.Lambda();
+
+const BUILD_DIR = 'build';
+const API_GATEWAY_ID = '1jxogzz6a3';
 
 // One-time task
 gulp.task('permit-lambda', function() {
