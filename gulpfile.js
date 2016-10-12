@@ -21,13 +21,6 @@ gulp.task('permit-lambda', function(cb) {
   }).promise();
 });
 
-gulp.task('validate-api', function(cb) {
-  var exec = require('child_process').exec;
-  exec('./node_modules/swagger-tools/bin/swagger-tools validate ./src/api/schema.yaml', function (err, stdout, stderr) {
-    cb(err);
-  });
-});
-
 gulp.task('deploy-lambda', function(cb) {
   var stream = require('stream');
   var lambda = new AWS.Lambda();
@@ -60,6 +53,13 @@ gulp.task('deploy-lambda', function(cb) {
         });
       }
     }));
+});
+
+gulp.task('validate-api', function(cb) {
+  var exec = require('child_process').exec;
+  exec('./node_modules/swagger-tools/bin/swagger-tools validate ./src/api/schema.yaml', function (err, stdout, stderr) {
+    cb(err);
+  });
 });
 
 gulp.task('deploy-api', function (cb) {
