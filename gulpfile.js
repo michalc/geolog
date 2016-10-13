@@ -108,11 +108,9 @@ gulp.task('build-front', function() {
 
 gulp.task('deploy-front', function() {
   const publisher = awspublish.create({
-    region: 'eu-west-1',
     params: {
       Bucket: 'geolog.co'
-    },
-    credentials: new AWS.SharedIniFileCredentials({profile: 's3-geolog'})
+    }
   });
 
   // All files are forced since gulp-awspublish doesn't
