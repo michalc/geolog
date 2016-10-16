@@ -5,6 +5,7 @@ const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
+const coveralls = require('gulp-coveralls');
 const eslint = require('gulp-eslint');
 const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
@@ -98,9 +99,14 @@ gulp.task('pre-test', function () {
 });
 
 gulp.task('test', ['pre-test'], function() {
-  gulp.src('src/**/*.spec.js', {read: false})
+  return gulp.src('src/**/*.spec.js', {read: false})
     .pipe(mocha({reporter: 'nyan'}))
     .pipe(istanbul.writeReports());
+});
+
+gulp.task('test-and-coveralls', ['test'], function() {
+  return gulp.src('coverage/lcov.info')
+    .pipe(coveralls());
 });
 
 // One-time task
