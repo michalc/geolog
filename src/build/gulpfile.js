@@ -5,6 +5,7 @@ const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
+const eslint = require('gulp-eslint');
 const stream = require('stream');
 const zip = require('gulp-zip');
 
@@ -41,7 +42,7 @@ function putAndDeployApi(schema) {
     restApiId: API_GATEWAY_ID,
     mode: 'overwrite',
     failOnWarnings: true
-  }).promise().then(function(api) {
+  }).promise().then(function() {
     return apigateway.createDeployment({
       restApiId: API_GATEWAY_ID,
       stageName: API_GATEWAY_STAGE,
@@ -53,7 +54,7 @@ function putAndDeployApi(schema) {
 // calling the cb on promise success/failure as appropriate
 function callbackIfy(original, cb) {
   return function() {
-    original.apply(this, arguments).then(function(result) {
+    original.apply(this, arguments).then(function() {
       cb();
     }, function(err) {
       cb(err || true);
@@ -70,7 +71,14 @@ function streamIfy(original) {
       callbackIfy(original, cb)(file.contents);
     }
   });
-};
+}
+
+gulp.task('lint', function() {
+  return gulp.src(['**/*.js'])
+    .pipe(eslint())
+    .pipe(eslint.format())
+    .pipe(eslint.failAfterError());
+});
 
 // One-time task
 gulp.task('permit-lambda', function() {
@@ -91,7 +99,7 @@ gulp.task('deploy-lambda', function() {
 });
 
 gulp.task('validate-api', function(cb) {
-  exec('npm bin swagger-tools validate src/api/schema.yaml', function (err, stdout, stderr) {
+  exec('npm bin swagger-tools validate src/api/schema.yaml', function (err) {
     cb(err);
   });
 });
