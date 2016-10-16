@@ -7,6 +7,7 @@ const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
 const eslint = require('gulp-eslint');
 const htmlhint = require("gulp-htmlhint");
+const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
 const zip = require('gulp-zip');
 const mergeStream = require('merge-stream')
@@ -90,9 +91,16 @@ gulp.task('lint', function() {
   return mergeStream(javascript, html);
 });
 
-gulp.task('test', function() {
+gulp.task('pre-test', function () {
+  return gulp.src(['src/**/*.js', '!src/**/*.spec.js'])
+    .pipe(istanbul())
+    .pipe(istanbul.hookRequire());
+});
+
+gulp.task('test', ['pre-test'], function() {
   gulp.src('src/**/*.spec.js', {read: false})
-    .pipe(mocha({reporter: 'nyan'}));
+    .pipe(mocha({reporter: 'nyan'}))
+    .pipe(istanbul.writeReports());
 });
 
 // One-time task
