@@ -5,8 +5,9 @@ const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
-const htmlhint = require("gulp-htmlhint");
 const eslint = require('gulp-eslint');
+const htmlhint = require("gulp-htmlhint");
+const mocha = require('gulp-mocha');
 const zip = require('gulp-zip');
 const mergeStream = require('merge-stream')
 const stream = require('stream');
@@ -87,6 +88,11 @@ gulp.task('lint', function() {
     .pipe(htmlhint.failReporter());
 
   return mergeStream(javascript, html);
+});
+
+gulp.task('test', function() {
+  gulp.src('src/**/*.spec.js', {read: false})
+    .pipe(mocha({reporter: 'nyan'}));
 });
 
 // One-time task

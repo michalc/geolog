@@ -6,22 +6,22 @@ exports.handler = (event, context, callback) => {
     statusCode: err ? '400' : '200',
     body: err ? err.message : JSON.stringify(res),
     headers: {
-        'Content-Type': 'application/json',
+      'Content-Type': 'application/json',
     },
   });
 
   switch (event.httpMethod) {
     case 'DELETE':
-      done(null, 'done4!');
+      done(null, 'Received DELETE');
       break;  
     case 'GET':
-      done(null, 'done4!');
+      done(null, 'Received GET');
       break;
     case 'POST':
-      done(null, 'done4!');
+      done(null, 'Received POST');
       break;
     case 'PUT':
-      done(null, 'done4!');
+      done(null, 'Received PUT');
       break;
     default:
       done(new Error(`Unsupported method "${event.httpMethod}"`));
