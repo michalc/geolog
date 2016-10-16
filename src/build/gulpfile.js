@@ -5,9 +5,12 @@ const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
+const htmlhint = require("gulp-htmlhint");
 const eslint = require('gulp-eslint');
-const stream = require('stream');
 const zip = require('gulp-zip');
+const mergeStream = require('merge-stream')
+const stream = require('stream');
+
 
 AWS.config.region = 'eu-west-1';
 AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'});
@@ -74,10 +77,16 @@ function streamIfy(original) {
 }
 
 gulp.task('lint', function() {
-  return gulp.src(['**/*.js'])
+  const javascript = gulp.src(['src/**/*.js'])
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
+
+  const html = gulp.src(['src/**/*.html'])
+    .pipe(htmlhint())
+    .pipe(htmlhint.failReporter());
+
+  return mergeStream(javascript, html);
 });
 
 // One-time task
