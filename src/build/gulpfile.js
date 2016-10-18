@@ -121,7 +121,7 @@ gulp.task('permit-lambda', function() {
   }).promise();
 });
 
-gulp.task('deploy-lambda', function() {
+gulp.task('deploy-back', function() {
   const files = gulp.src(['src/back/endpoint.js']);
   return files
     .pipe(zip('endpoint.zip'))
