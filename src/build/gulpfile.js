@@ -12,6 +12,7 @@ const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
 const zip = require('gulp-zip');
+const http = require('http');
 const mergeStream = require('merge-stream')
 const stream = require('stream');
 
@@ -152,6 +153,21 @@ gulp.task('serve-front', ['watch-front'], function() {
   return connect.server({
     root: 'build'
   });
+});
+
+gulp.task('serve-back', function() {
+  const endpoint = require('../back/endpoint.js');
+  http
+    .createServer(function(request, response) {
+      const lambdaRequest = {
+        httpMethod: request.method,
+        body: null, // Need to do something with request stream to get it?
+      }
+      endpoint.handler(lambdaRequest, null, function(err, json) {
+        response.end(json.body);
+      });
+    })
+    .listen(8081);
 });
 
 gulp.task('deploy-front', function() {
