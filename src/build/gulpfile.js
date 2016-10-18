@@ -93,13 +93,13 @@ gulp.task('lint', function() {
   return mergeStream(javascript, html);
 });
 
-gulp.task('pre-test', function () {
+gulp.task('test-cover', function () {
   return gulp.src(['src/**/*.js', '!src/**/*.spec.js'])
     .pipe(istanbul())
     .pipe(istanbul.hookRequire());
 });
 
-gulp.task('test', ['pre-test'], function() {
+gulp.task('test', ['test-cover'], function() {
   return gulp.src('src/**/*.spec.js', {read: false})
     .pipe(mocha({reporter: 'nyan'}))
     .pipe(istanbul.writeReports());
@@ -129,7 +129,7 @@ gulp.task('deploy-lambda', function() {
 });
 
 gulp.task('validate-api', function(cb) {
-  exec('npm bin swagger-tools validate src/api/schema.yaml', function (err) {
+  exec('node_modules/.bin/swagger-tools validate src/api/schema.yaml', function (err) {
     cb(err);
   });
 });
