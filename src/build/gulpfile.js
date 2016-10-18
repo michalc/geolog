@@ -5,6 +5,7 @@ const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
+const connect = require('gulp-connect');
 const coveralls = require('gulp-coveralls');
 const eslint = require('gulp-eslint');
 const htmlhint = require("gulp-htmlhint");
@@ -141,6 +142,16 @@ gulp.task('deploy-api', function () {
 gulp.task('build-front', function() {
   const files = gulp.src(['src/front/index.html']);
   return files.pipe(gulp.dest('build'))
+});
+
+gulp.task('watch-front', function () {
+  gulp.watch(['src/front/**/*.html'], ['build-front']);
+});
+
+gulp.task('serve-front', ['watch-front'], function() {
+  return connect.server({
+    root: 'build'
+  });
 });
 
 gulp.task('deploy-front', function() {
