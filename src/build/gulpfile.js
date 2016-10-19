@@ -7,14 +7,18 @@ const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
 const connect = require('gulp-connect');
 const coveralls = require('gulp-coveralls');
+const decompress = require('gulp-decompress');
 const eslint = require('gulp-eslint');
+const filter = require('gulp-filter');
 const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
+const rename = require('gulp-rename');
 const zip = require('gulp-zip');
 const http = require('http');
 const mergeStream = require('merge-stream')
 const stream = require('stream');
+const Vinyl = require('vinyl');
 
 
 AWS.config.region = 'eu-west-1';
@@ -56,6 +60,30 @@ function putAndDeployApi(schema) {
       stageName: API_GATEWAY_STAGE,
     }).promise();
   });
+}
+
+function getSdk() {
+  const source = stream.Readable({
+    objectMode: true,
+    read: function() {
+    }
+  });
+
+  apigateway.getSdk({
+    restApiId: API_GATEWAY_ID,
+    stageName: API_GATEWAY_STAGE,
+    sdkType: 'javascript'
+  }).promise().then(function(response) {
+    source.push(new Vinyl({
+      path: 'api-gateway-client.zip',
+      contents: response.body
+    }));
+    source.push(null);
+  }).catch(function(err) {
+    source.emit('error', err)
+  });
+
+  return source;
 }
 
 // Returns a function that calls the original,
@@ -138,6 +166,17 @@ gulp.task('validate-api', function(cb) {
 gulp.task('deploy-api', function () {
   const files = gulp.src(['src/api/schema.yaml']);
   return files.pipe(streamIfy(putAndDeployApi));
+});
+
+gulp.task('fetch-api-client', function () {
+  return getSdk()
+    .pipe(decompress())
+    .pipe(filter('apiGateway-js-sdk/**/*.js'))
+    .pipe(rename(function (path) {
+      console.log(path)
+      path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/,'')
+    }))
+    .pipe(gulp.dest('build/scripts'));
 });
 
 gulp.task('build-front', function() {

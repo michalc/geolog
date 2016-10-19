@@ -9,12 +9,16 @@
     "gulp-awspublish": "^3.3.0",
     "gulp-connect": "^5.0.0",
     "gulp-coveralls": "^0.1.4",
+    "gulp-decompress": "^2.0.1",
     "gulp-eslint": "^3.0.1",
+    "gulp-filter": "^4.0.0",
     "gulp-htmlhint": "^0.3.1",
     "gulp-istanbul": "^1.1.1",
     "gulp-mocha": "^3.0.1",
+    "gulp-rename": "^1.2.2",
     "gulp-zip": "^3.2.0",
     "merge-stream": "^1.0.0",
-    "swagger-tools": "^0.10.1"
+    "swagger-tools": "^0.10.1",
+    "vinyl": "^2.0.0"
   }
 }
