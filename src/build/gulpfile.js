@@ -3,6 +3,7 @@
 const AWS = require('aws-sdk');
 const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
+const del = require('del');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
 const connect = require('gulp-connect');
@@ -83,7 +84,12 @@ function getSdk() {
     source.emit('error', err)
   });
 
-  return source;
+  return source
+    .pipe(decompress())
+    .pipe(filter('apiGateway-js-sdk/**/*.js'))
+    .pipe(rename(function (path) {
+      path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/,'')
+    }));
 }
 
 // Returns a function that calls the original,
@@ -170,17 +176,20 @@ gulp.task('deploy-api', function () {
 
 gulp.task('fetch-api-client', function () {
   return getSdk()
-    .pipe(decompress())
-    .pipe(filter('apiGateway-js-sdk/**/*.js'))
-    .pipe(rename(function (path) {
-      path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/,'')
-    }))
     .pipe(gulp.dest('build/scripts'));
 });
 
-gulp.task('build-front', function() {
-  const files = gulp.src(['src/front/index.html']);
-  return files.pipe(gulp.dest('build'))
+gulp.task('clean-front', function() {
+  return del(['build/**', '!public/assets']);
+});
+
+gulp.task('build-front', ['clean-front'], function() {
+  const sdk = getSdk()
+    .pipe(gulp.dest('build/scripts'));
+
+  const files = gulp.src(['src/front/index.html'])
+    files.pipe(gulp.dest('build'));
+  return mergeStream(sdk, files);
 });
 
 gulp.task('watch-front', function () {
@@ -222,15 +231,23 @@ gulp.task('deploy-front', function() {
   }
 
   // Cache 5 mins + gzip
-  const index = gulp.src('index.html', {cwd: BUILD_DIR})
+  const index = gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR})
     .pipe(awspublish.gzip())
     .pipe(publish({
-      'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public'
+      'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public',
+      'Content-Type': 'text/html; charset=utf-8'
     }));
 
-  return index
-    .pipe(publisher.sync())
-    .pipe(awspublish.reporter());
+  // Cache 5 mins + gzip
+  const js = gulp.src('scripts/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR})
+    .pipe(awspublish.gzip())
+    .pipe(publish({
+      'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public',
+      'Content-Type': 'application/javascript; charset=utf-8'
+    }));
+
+  return mergeStream(index, js)
+    .pipe(publisher.sync());
 });
 
 gulp.task('default', ['build-front']);

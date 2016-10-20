@@ -5,6 +5,7 @@
   "dependencies": {
     "aws-sdk": "^2.6.7",
     "concurrent-transform": "^1.0.0",
+    "del": "^2.2.2",
     "gulp": "^3.9.1",
     "gulp-awspublish": "^3.3.0",
     "gulp-connect": "^5.0.0",
