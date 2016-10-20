@@ -173,7 +173,6 @@ gulp.task('fetch-api-client', function () {
     .pipe(decompress())
     .pipe(filter('apiGateway-js-sdk/**/*.js'))
     .pipe(rename(function (path) {
-      console.log(path)
       path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/,'')
     }))
     .pipe(gulp.dest('build/scripts'));
