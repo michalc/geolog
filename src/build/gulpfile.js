@@ -21,13 +21,13 @@ const mergeStream = require('merge-stream')
 const stream = require('stream');
 const Vinyl = require('vinyl');
 
-
 AWS.config.region = 'eu-west-1';
 AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'});
 const apigateway = new AWS.APIGateway();
 const lambda = new AWS.Lambda();
 
 const exec = childProcess.exec;
+const spawn = childProcess.spawn;
 
 const LAMBDA_NAME = 'geolog'
 const LAMBDA_ALIAS = 'prod'
@@ -63,7 +63,7 @@ function putAndDeployApi(schema) {
   });
 }
 
-function getSdk() {
+function getApiSdk() {
   const source = stream.Readable({
     objectMode: true,
     read: function() {
@@ -90,6 +90,54 @@ function getSdk() {
     .pipe(rename(function (path) {
       path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/,'')
     }));
+}
+
+function getAwsSdk() {
+  // This all feels a bit long winded. A better way with browserify?
+  const source = stream.Readable({
+    objectMode: true,
+    read: function() {
+    }
+  });
+
+  var installSdkDependencies = new Promise(function(resolve, reject) {
+    exec('npm install --prefix ./node_modules/aws-sdk/', function(err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve()
+      }
+    });
+  });
+
+  installSdkDependencies.then(function() {
+    var env = Object.create( process.env );
+    env.MINIFY = '1';
+    const out = spawn('node', ['node_modules/aws-sdk/dist-tools/browser-builder.js', 'cognitoidentity'], {
+      env: env
+    });
+
+    out.stderr.pipe(process.stderr);
+    out.on('close', function(code) {
+      if (code) {
+        source.emit('error', code);
+      } else {
+        source.push(null);
+      }
+    })
+
+    source.push(new Vinyl({
+      path: 'aws-sdk.min.js',
+      contents: out.stdout
+    }));
+    
+  });
+
+  installSdkDependencies.catch(function(err) {
+    source.emit('error', err)
+  });
+
+  return source;
 }
 
 // Returns a function that calls the original,
@@ -175,7 +223,7 @@ gulp.task('deploy-api', function () {
 });
 
 gulp.task('fetch-api-client', function () {
-  return getSdk()
+  return getApiSdk()
     .pipe(gulp.dest('build/scripts'));
 });
 
@@ -184,12 +232,15 @@ gulp.task('clean-front', function() {
 });
 
 gulp.task('build-front', ['clean-front'], function() {
-  const sdk = getSdk()
+  const apiSdk = getApiSdk()
     .pipe(gulp.dest('build/scripts'));
 
-  const files = gulp.src(['src/front/index.html'])
+  const awsSdk = getAwsSdk()
+    .pipe(gulp.dest('build/scripts'));
+
+  const files = gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'})
     files.pipe(gulp.dest('build'));
-  return mergeStream(sdk, files);
+  return mergeStream(apiSdk, awsSdk, files);
 });
 
 gulp.task('watch-front', function () {
