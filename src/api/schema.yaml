@@ -16,13 +16,6 @@ paths:
         type: aws_proxy
         uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog:prod/invocations
         httpMethod: POST
-        responses:
-          "default":
-            statusCode: "200"
-            responseParameters:
-              method.response.header.Access-Control-Allow-Headers : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              method.response.header.Access-Control-Allow-Methods : "'*'"
-              method.response.header.Access-Control-Allow-Origin : "'*'"
       security:
       - sigv4: []
       description: Create a track
@@ -82,13 +75,6 @@ paths:
         type: aws_proxy
         uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog:prod/invocations
         httpMethod: POST
-        responses:
-          "default":
-            statusCode: "200"
-            responseParameters:
-              method.response.header.Access-Control-Allow-Headers : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              method.response.header.Access-Control-Allow-Methods : "'*'"
-              method.response.header.Access-Control-Allow-Origin : "'*'"
       security:
       - sigv4: []
       description: Get a track
@@ -161,13 +147,6 @@ paths:
         type: aws_proxy
         uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog:prod/invocations
         httpMethod: POST
-        responses:
-          "default":
-            statusCode: "200"
-            responseParameters:
-              method.response.header.Access-Control-Allow-Headers : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-              method.response.header.Access-Control-Allow-Methods : "'*'"
-              method.response.header.Access-Control-Allow-Origin : "'*'"
       security:
       - sigv4: []
       description: Get an in-progress job
@@ -227,7 +206,7 @@ paths:
               "statusCode" : 200
             }
         responses:
-          "default":
+          "200":
             statusCode: "200"
             responseParameters:
               method.response.header.Access-Control-Allow-Headers : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
