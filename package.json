@@ -4,6 +4,7 @@
   "repository": "https://github.com/michalc/geolog",
   "dependencies": {
     "aws-sdk": "^2.6.7",
+    "browserify": "^13.1.0",
     "concurrent-transform": "^1.0.0",
     "del": "^2.2.2",
     "gulp": "^3.9.1",
@@ -17,9 +18,12 @@
     "gulp-istanbul": "^1.1.1",
     "gulp-mocha": "^3.0.1",
     "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^2.0.0",
     "gulp-zip": "^3.2.0",
     "merge-stream": "^1.0.0",
     "swagger-tools": "^0.10.1",
-    "vinyl": "^2.0.0"
+    "vinyl": "^2.0.0",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0"
   }
 }

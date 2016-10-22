@@ -1,6 +1,7 @@
 'use strict';
 
 const AWS = require('aws-sdk');
+const browserify = require('browserify')
 const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
 const del = require('del');
@@ -15,11 +16,14 @@ const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
 const rename = require('gulp-rename');
+const uglify = require('gulp-uglify');
 const zip = require('gulp-zip');
 const http = require('http');
 const mergeStream = require('merge-stream')
 const stream = require('stream');
 const Vinyl = require('vinyl');
+const buffer = require('vinyl-buffer');
+const source = require('vinyl-source-stream');
 
 AWS.config.region = 'eu-west-1';
 AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'});
@@ -27,13 +31,18 @@ const apigateway = new AWS.APIGateway();
 const lambda = new AWS.Lambda();
 
 const exec = childProcess.exec;
-const spawn = childProcess.spawn;
 
 const LAMBDA_NAME = 'geolog'
 const LAMBDA_ALIAS = 'prod'
 const BUILD_DIR = 'build';
 const API_GATEWAY_ID = '1jxogzz6a3';
 const API_GATEWAY_STAGE = 'prod';
+
+// Slightly horrible that can't find a better (less global)
+// way of getting this is the way to get options into the
+// AWS SDK builder
+process.env.MINIFY = '1'
+process.env.AWS_SERVICES ='cognitoidentity'
 
 function updateFunctionCodeAndAlias(zippedCode) {
   return lambda.updateFunctionCode({
@@ -90,54 +99,6 @@ function getApiSdk() {
     .pipe(rename(function (path) {
       path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/,'')
     }));
-}
-
-function getAwsSdk() {
-  // This all feels a bit long winded. A better way with browserify?
-  const source = stream.Readable({
-    objectMode: true,
-    read: function() {
-    }
-  });
-
-  var installSdkDependencies = new Promise(function(resolve, reject) {
-    exec('npm install --prefix ./node_modules/aws-sdk/', function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve()
-      }
-    });
-  });
-
-  installSdkDependencies.then(function() {
-    var env = Object.create( process.env );
-    env.MINIFY = '1';
-    const out = spawn('node', ['node_modules/aws-sdk/dist-tools/browser-builder.js', 'cognitoidentity'], {
-      env: env
-    });
-
-    out.stderr.pipe(process.stderr);
-    out.on('close', function(code) {
-      if (code) {
-        source.emit('error', code);
-      } else {
-        source.push(null);
-      }
-    })
-
-    source.push(new Vinyl({
-      path: 'aws-sdk.min.js',
-      contents: out.stdout
-    }));
-    
-  });
-
-  installSdkDependencies.catch(function(err) {
-    source.emit('error', err)
-  });
-
-  return source;
 }
 
 // Returns a function that calls the original,
@@ -235,12 +196,16 @@ gulp.task('build-front', ['clean-front'], function() {
   const apiSdk = getApiSdk()
     .pipe(gulp.dest('build/scripts'));
 
-  const awsSdk = getAwsSdk()
-    .pipe(gulp.dest('build/scripts'));
+  const script = browserify('src/front/scripts/app.js').bundle()
+    .pipe(source('app.js'))
+    .pipe(buffer())
+    .pipe(uglify())
+    .pipe(gulp.dest('build/scripts'))
 
   const files = gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'})
-    files.pipe(gulp.dest('build'));
-  return mergeStream(apiSdk, awsSdk, files);
+    .pipe(gulp.dest('build'));
+
+  return mergeStream(apiSdk, script, files);
 });
 
 gulp.task('watch-front', function () {
