@@ -2,11 +2,13 @@
 
 const AWS = require('aws-sdk');
 const browserify = require('browserify')
+const browserifyShim = require('browserify-shim')
 const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
 const del = require('del');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
+const concat = require('gulp-concat');
 const connect = require('gulp-connect');
 const coveralls = require('gulp-coveralls');
 const decompress = require('gulp-decompress');
@@ -183,20 +185,27 @@ gulp.task('deploy-api', function () {
   return files.pipe(streamIfy(putAndDeployApi));
 });
 
-gulp.task('fetch-api-client', function () {
+gulp.task('clean-download', function() {
+  return del(['download/**', '!download']);
+});
+
+gulp.task('fetch-api-client', ['clean-download'], function () {
   return getApiSdk()
-    .pipe(gulp.dest('build/scripts'));
+    .pipe(concat('apigClientFactory.js'))
+    .pipe(gulp.dest('download/scripts'));
 });
 
 gulp.task('clean-front', function() {
-  return del(['build/**', '!public/assets']);
+  return del(['build/**', '!build']);
 });
 
-gulp.task('build-front', ['clean-front'], function() {
-  const apiSdk = getApiSdk()
-    .pipe(gulp.dest('build/scripts'));
-
-  const script = browserify('src/front/scripts/app.js').bundle()
+gulp.task('build-front', ['clean-front', 'fetch-api-client'], function() {
+  const script = browserify({
+    entries: 'src/front/scripts/app.js',
+    // Config for shimming is in package.json
+    debug: true,
+    transform: [browserifyShim]
+  }).bundle()
     .pipe(source('app.js'))
     .pipe(buffer())
     .pipe(uglify())
@@ -205,11 +214,11 @@ gulp.task('build-front', ['clean-front'], function() {
   const files = gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'})
     .pipe(gulp.dest('build'));
 
-  return mergeStream(apiSdk, script, files);
+  return mergeStream(script, files);
 });
 
 gulp.task('watch-front', function () {
-  gulp.watch(['src/front/**/*.html'], ['build-front']);
+  gulp.watch(['package.json', 'src/**/*'], ['build-front']);
 });
 
 gulp.task('serve-front', ['watch-front'], function() {
