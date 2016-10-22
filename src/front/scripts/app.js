@@ -13,25 +13,14 @@ AWS.config.update({
   credentials: creds
 });
 
-
-var apigClient = apigClientFactory.newClient({
-  accessKey: creds.accessKeyId,
-  secretKey: creds.secretAccessKey,
-  sessionToken: creds.sessionToken, //OPTIONAL: If you are using temporary credentials you must include the session token
-  region: 'eu-west-1'
-});
-apigClient.jobsIdGet({id:1}).then(function() {
-
-});
-
 creds.get(function() {
-  // var apigClient = apigClientFactory.newClient({
-  //   accessKey: creds.accessKeyId,
-  //   secretKey: creds.secretAccessKey,
-  //   sessionToken: creds.sessionToken, //OPTIONAL: If you are using temporary credentials you must include the session token
-  //   region: 'eu-west-1'
-  // });
-  // apigClient.jobsIdGet({id:1}).then(function() {
+  var apigClient = apigClientFactory.newClient({
+    accessKey: creds.accessKeyId,
+    secretKey: creds.secretAccessKey,
+    sessionToken: creds.sessionToken, //OPTIONAL: If you are using temporary credentials you must include the session token
+    region: 'eu-west-1'
+  });
+  apigClient.jobsIdGet({id:1}).then(function() {
 
-  // });
+  });
 });
