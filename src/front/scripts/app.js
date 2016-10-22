@@ -1,5 +1,3 @@
-/* global apigClientFactory */
-
 var AWS = require('aws-sdk');
 var apigClientFactory = require('apig-client-factory');
 
