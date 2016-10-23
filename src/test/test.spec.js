@@ -1,8 +1,10 @@
+/* eslint-env node, mocha */
+/* global browser */
 
-describe('geolog', function() {
-  it('has the title geolog', function() {
+describe('geolog', () => {
+  it('has the title geolog', () => {
     browser.url('http://localhost:8080/');
-    var title = browser.getTitle();
+    const title = browser.getTitle();
     title.should.be.equal('GeoLog');
   });
 });
