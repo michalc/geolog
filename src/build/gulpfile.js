@@ -18,11 +18,12 @@ const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
 const rename = require('gulp-rename');
-const uglify = require('gulp-uglify');
+// const uglify = require('gulp-uglify');
+const gutil = require('gulp-util');
 const zip = require('gulp-zip');
 const http = require('http');
 const mergeStream = require('merge-stream')
-const pipe = require('multipipe')
+const pipe = require('multipipe');  // multipipe forwards errors, which is good!
 const stream = require('stream');
 const Vinyl = require('vinyl');
 const buffer = require('vinyl-buffer');
@@ -52,7 +53,7 @@ function updateFunctionCodeAndAlias(zippedCode) {
     Publish: true,
     FunctionName: 'geolog',
     ZipFile: zippedCode
-  }).promise().then(function(resource) {
+  }).promise().then((resource) => {
     return lambda.updateAlias({
       FunctionName: LAMBDA_NAME,
       FunctionVersion: resource.Version,
@@ -67,7 +68,7 @@ function putAndDeployApi(schema) {
     restApiId: API_GATEWAY_ID,
     mode: 'overwrite',
     failOnWarnings: true
-  }).promise().then(function() {
+  }).promise().then(() => {
     return apigateway.createDeployment({
       restApiId: API_GATEWAY_ID,
       stageName: API_GATEWAY_STAGE,
@@ -78,21 +79,21 @@ function putAndDeployApi(schema) {
 function getApiSdk() {
   const source = stream.Readable({
     objectMode: true,
-    read: function() {
+    read: () => {
     }
   });
 
   apigateway.getSdk({
     restApiId: API_GATEWAY_ID,
     stageName: API_GATEWAY_STAGE,
-    sdkType: 'javascript'
-  }).promise().then(function(response) {
+    sdkType: 'javascriptdf'
+  }).promise().then((response) => {
     source.push(new Vinyl({
       path: 'api-gateway-client.zip',
       contents: response.body
     }));
     source.push(null);
-  }).catch(function(err) {
+  }).catch((err) => {
     source.emit('error', err)
   });
 
@@ -100,7 +101,7 @@ function getApiSdk() {
     source,
     decompress(),
     filter('apiGateway-js-sdk/**/*.js'),
-    rename(function (path) {
+    rename((path) => {
       path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/, '');
     })
   );
@@ -109,10 +110,10 @@ function getApiSdk() {
 // Returns a function that calls the original,
 // calling the cb on promise success/failure as appropriate
 function callbackIfy(original, cb) {
-  return function() {
-    original.apply(this, arguments).then(function() {
+  return () => {
+    original.apply(this, arguments).then(() => {
       cb();
-    }, function(err) {
+    }, (err) => {
       cb(err || true);
     });
   }
@@ -123,18 +124,38 @@ function callbackIfy(original, cb) {
 function streamIfy(original) {
   return stream.Transform({
     objectMode: true,
-    transform: function(file, enc, cb) {
+    transform: (file, enc, cb) => {
       callbackIfy(original, cb)(file.contents);
     }
   });
 }
 
-gulp.task('lint', function() {
+// Annoyling mergeStream does not propagate errors
+function mergeWithErrors() {
+  const merged = mergeStream.apply(null, arguments);
+  for (let stream of arguments) {
+    stream.on('error', (error) => {
+      merged.emit('error', error);
+    });
+  }
+  return merged
+}
+
+gulp.task('lint', () => {
   const javascript = pipe(
     gulp.src(['src/**/*.js']),
     eslint(),
     eslint.format(),
-    eslint.failAfterError()
+    eslint.results((results/*, cb */) => {
+      if (results.errorCount) {
+        // If using cb, gulp-eslint throws an exception,
+        // rather than just emitting an error, which causes
+        // an non-helpful stack strace
+        javascript.emit('error', new gutil.PluginError('eslint', {
+          message: 'Failed linting'
+        }));
+      }
+    })
   );
 
   const html = pipe(
@@ -143,10 +164,10 @@ gulp.task('lint', function() {
     htmlhint.failReporter()
   );
 
-  return mergeStream(javascript, html);
+  return mergeWithErrors(javascript, html);
 });
 
-gulp.task('test-cover', function () {
+gulp.task('test-cover', () => {
   return pipe(
     gulp.src(['src/**/*.js', '!src/**/*.spec.js']),
     istanbul(),
@@ -154,7 +175,7 @@ gulp.task('test-cover', function () {
   );
 });
 
-gulp.task('test', ['test-cover'], function() {
+gulp.task('test', ['test-cover'], () => {
   return pipe(
     gulp.src('src/**/*.spec.js', {read: false}),
     mocha({reporter: 'nyan'}),
@@ -162,7 +183,7 @@ gulp.task('test', ['test-cover'], function() {
   );
 });
 
-gulp.task('test-and-coveralls', ['test'], function() {
+gulp.task('test-and-coveralls', ['test'], () => {
   return pipe(
     gulp.src('coverage/lcov.info'),
     coveralls()
@@ -170,7 +191,7 @@ gulp.task('test-and-coveralls', ['test'], function() {
 });
 
 // One-time task
-gulp.task('permit-lambda', function() {
+gulp.task('permit-lambda', () => {
   return lambda.addPermission({
     Action: 'lambda:InvokeFunction',
     FunctionName: 'geolog',
@@ -180,7 +201,7 @@ gulp.task('permit-lambda', function() {
   }).promise();
 });
 
-gulp.task('deploy-back', function() {
+gulp.task('deploy-back', () => {
   return pipe(
     gulp.src(['src/back/endpoint.js']),
     zip('endpoint.zip'),
@@ -188,24 +209,24 @@ gulp.task('deploy-back', function() {
   );
 });
 
-gulp.task('validate-api', function(cb) {
-  exec('node_modules/.bin/swagger-tools validate src/api/schema.yaml', function (err) {
+gulp.task('validate-api', (cb) => {
+  exec('node_modules/.bin/swagger-tools validate src/api/schema.yaml', (err) => {
     cb(err);
   });
 });
 
-gulp.task('deploy-api', function () {
+gulp.task('deploy-api', () => {
   return pipe(
     gulp.src(['src/api/schema.yaml']),
     streamIfy(putAndDeployApi)
   );
 });
 
-gulp.task('clean-download', function() {
+gulp.task('clean-download', () => {
   return del(['download/**', '!download']);
 });
 
-gulp.task('fetch-api-client', ['clean-download'], function () {
+gulp.task('fetch-api-client', ['clean-download'], () => {
   return pipe(
     getApiSdk(),
     concat('apigClientFactory.js'),
@@ -213,11 +234,11 @@ gulp.task('fetch-api-client', ['clean-download'], function () {
   );
 });
 
-gulp.task('clean-front', function() {
+gulp.task('clean-front', () => {
   return del(['build/**', '!build']);
 });
 
-gulp.task('build-front', ['clean-front', 'fetch-api-client'], function() {
+gulp.task('build-front', ['clean-front', 'fetch-api-client'], () => {
   const script = pipe(
     browserify({
       entries: 'src/front/scripts/app.js',
@@ -225,7 +246,7 @@ gulp.task('build-front', ['clean-front', 'fetch-api-client'], function() {
     }).bundle(),
     source('app.js'),
     buffer(),
-    uglify(),
+    // uglify(),
     gulp.dest('build/scripts')
   );
 
@@ -234,35 +255,35 @@ gulp.task('build-front', ['clean-front', 'fetch-api-client'], function() {
     gulp.dest('build')
   );
 
-  return mergeStream(script, files);
+  return mergeWithErrors(script, files);
 });
 
-gulp.task('watch-front', function () {
+gulp.task('watch-front', () => {
   gulp.watch(['package.json', 'src/**/*'], ['build-front']);
 });
 
-gulp.task('serve-front', ['watch-front'], function() {
+gulp.task('serve-front', ['watch-front'], () => {
   return connect.server({
     root: 'build'
   });
 });
 
-gulp.task('serve-back', function() {
+gulp.task('serve-back', () => {
   const endpoint = require('../back/endpoint.js');
   http
-    .createServer(function(request, response) {
+    .createServer((request, response) => {
       const lambdaRequest = {
         httpMethod: request.method,
         body: null, // Need to do something with request stream to get it?
       }
-      endpoint.handler(lambdaRequest, null, function(err, json) {
+      endpoint.handler(lambdaRequest, null, (err, json) => {
         response.end(json.body);
       });
     })
     .listen(8081);
 });
 
-gulp.task('deploy-front', function() {
+gulp.task('deploy-front', () => {
   const publisher = awspublish.create({
     params: {
       Bucket: 'geolog.co'
@@ -296,7 +317,7 @@ gulp.task('deploy-front', function() {
   );
 
   return pipe(
-    mergeStream(index, js),
+    mergeWithErrors(index, js),
     publisher.sync()
   );
 });
