@@ -18,6 +18,8 @@ const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
 const rename = require('gulp-rename');
+const rev = require('gulp-rev');
+const revReplace = require('gulp-rev-replace');
 // const uglify = require('gulp-uglify');
 const gutil = require('gulp-util');
 const zip = require('gulp-zip');
@@ -86,7 +88,7 @@ function getApiSdk() {
   apigateway.getSdk({
     restApiId: API_GATEWAY_ID,
     stageName: API_GATEWAY_STAGE,
-    sdkType: 'javascriptdf'
+    sdkType: 'javascript'
   }).promise().then((response) => {
     source.push(new Vinyl({
       path: 'api-gateway-client.zip',
@@ -239,23 +241,26 @@ gulp.task('clean-front', () => {
 });
 
 gulp.task('build-front', ['clean-front', 'fetch-api-client'], () => {
-  const script = pipe(
+  const scripts = pipe(
     browserify({
       entries: 'src/front/scripts/app.js',
       transform: [browserifyShim]
     }).bundle(),
-    source('app.js'),
+    source('scripts/app.js'),
     buffer(),
     // uglify(),
-    gulp.dest('build/scripts')
+    rev(),
+    gulp.dest('build'),
+    rev.manifest()
   );
 
   const files = pipe(
     gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'}),
+    revReplace({manifest: scripts}),
     gulp.dest('build')
   );
 
-  return mergeWithErrors(script, files);
+  return mergeWithErrors(scripts, files);
 });
 
 gulp.task('watch-front', () => {
