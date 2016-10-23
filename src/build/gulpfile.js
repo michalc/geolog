@@ -110,8 +110,8 @@ function getApiSdk() {
 // Returns a function that calls the original,
 // calling the cb on promise success/failure as appropriate
 function callbackIfy(original, cb) {
-  return () => {
-    original.apply(this, arguments).then(() => {
+  return (...args) => {
+    original.apply(this, args).then(() => {
       cb();
     }, (err) => {
       cb(err || true);
