@@ -180,7 +180,7 @@ gulp.task('test-cover', () => {
 
 gulp.task('test', ['test-cover'], () => {
   return pipe(
-    gulp.src('src/**/*.spec.js', {read: false}),
+    gulp.src(['src/back/**/*.spec.js', 'src/front/**/*.spec.js'], {read: false}),
     mocha({reporter: 'nyan'}),
     istanbul.writeReports()
   );
