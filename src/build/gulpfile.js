@@ -22,6 +22,7 @@ const rev = require('gulp-rev');
 const revReplace = require('gulp-rev-replace');
 // const uglify = require('gulp-uglify');
 const gutil = require('gulp-util');
+const webdriver = require('gulp-webdriver');
 const zip = require('gulp-zip');
 const http = require('http');
 const mergeStream = require('merge-stream')
@@ -263,11 +264,28 @@ gulp.task('build-front', ['clean-front', 'fetch-api-client'], () => {
   return mergeWithErrors(scripts, files);
 });
 
+gulp.task('test-e2e', ['build-front'], () => {
+  connect.server({
+    root: 'build'
+  });
+
+  const tests = pipe(
+    gulp.src('wdio.conf.js'),
+    webdriver()
+  );
+
+  tests.on('end', () => {
+    connect.serverClose();
+  });
+
+  return tests;
+});
+
 gulp.task('watch-front', () => {
   gulp.watch(['package.json', 'src/**/*'], ['build-front']);
 });
 
-gulp.task('serve-front', ['watch-front'], () => {
+gulp.task('serve-front', () => {
   return connect.server({
     root: 'build'
   });
