@@ -192,7 +192,9 @@ gulp.task('test', ['test-cover'], () => {
         mochaFile: RESULTS_DIR + '/unit.xml'
       }
     }),
-    istanbul.writeReports()
+    istanbul.writeReports({
+      dir: RESULTS_DIR + '/coverage'
+    })
   );
 });
 
