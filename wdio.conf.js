@@ -119,7 +119,10 @@ exports.config = {
   
   reporterOptions: {
     junit: {
-      outputDir: (process.env.CIRCLECI ? process.env.CIRCLE_TEST_REPORTS + '/' : '') + 'results'
+      outputDir: (process.env.CIRCLECI ? process.env.CIRCLE_TEST_REPORTS + '/' : '') + 'results',
+      outputFileFormat: function(opts) {
+        return `e2e-${opts.capabilities}-${opts.cid}.xml`
+      }
     }
   },
 
