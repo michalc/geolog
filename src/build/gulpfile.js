@@ -1,6 +1,5 @@
 'use strict';
 
-const async = require('async');
 const AWS = require('aws-sdk');
 const browserify = require('browserify')
 const browserifyShim = require('browserify-shim')
@@ -39,7 +38,6 @@ const apigateway = new AWS.APIGateway();
 const lambda = new AWS.Lambda();
 
 const exec = childProcess.exec;
-const spawn = childProcess.spawn;
 
 const LAMBDA_NAME = 'geolog'
 const LAMBDA_ALIAS = 'prod'
