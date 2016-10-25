@@ -52,6 +52,7 @@ process.env.MINIFY = '1'
 process.env.AWS_SERVICES ='cognitoidentity'
 
 const RESULTS_DIR = (process.env.CIRCLECI ? process.env.$CIRCLE_TEST_REPORTS + '/' : '') + 'results'
+gutil.log('RESULTS_DIR=' + RESULTS_DIR)
 
 function updateFunctionCodeAndAlias(zippedCode) {
   return lambda.updateFunctionCode({
