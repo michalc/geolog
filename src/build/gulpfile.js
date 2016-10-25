@@ -1,5 +1,6 @@
 'use strict';
 
+const async = require('async');
 const AWS = require('aws-sdk');
 const browserify = require('browserify')
 const browserifyShim = require('browserify-shim')
@@ -38,6 +39,7 @@ const apigateway = new AWS.APIGateway();
 const lambda = new AWS.Lambda();
 
 const exec = childProcess.exec;
+const spawn = childProcess.spawn;
 
 const LAMBDA_NAME = 'geolog'
 const LAMBDA_ALIAS = 'prod'
@@ -265,9 +267,26 @@ gulp.task('build-front', ['clean-front', 'fetch-api-client'], () => {
 });
 
 gulp.task('test-e2e', ['build-front'], () => {
+
+  // var update = function(cb) {
+  //   spawn('./node_modules/.bin/webdriver-manager', ['update'], {
+  //     stdio: 'inherit'
+  //   }).once('close', cb);
+  // };
+
+  // var start = function(cb) {
+  //   spawn('./node_modules/.bin/webdriver-manager', ['start'], {
+  //     stdio: 'inherit'
+  //   }).once('close', cb);
+  // };
+
   connect.server({
     root: 'build'
   });
+
+  // const webdriverManager = spawn('./node_modules/.bin/webdriver-manager', ['start'], {
+  //   stdio: 'inherit'
+  // });
 
   const tests = pipe(
     gulp.src('wdio.conf.js'),
@@ -276,6 +295,7 @@ gulp.task('test-e2e', ['build-front'], () => {
 
   tests.on('end', () => {
     connect.serverClose();
+    // webdriverManager.kill();
   });
 
   return tests;
