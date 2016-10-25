@@ -33,7 +33,7 @@ const buffer = require('vinyl-buffer');
 const source = require('vinyl-source-stream');
 
 AWS.config.region = 'eu-west-1';
-AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 's3-geolog'});
+AWS.config.credentials = new AWS.SharedIniFileCredentials({profile: 'default'});
 const apigateway = new AWS.APIGateway();
 const lambda = new AWS.Lambda();
 
