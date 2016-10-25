@@ -179,7 +179,6 @@ gulp.task('test-cover', () => {
 });
 
 gulp.task('test', ['test-cover'], () => {
-  gutil.log(process.env)
   const RESULTS_DIR = (process.env.CIRCLECI ? process.env.CIRCLE_TEST_REPORTS + '/' : '') + 'results'
   gutil.log('RESULTS_DIR=' + RESULTS_DIR)
 
