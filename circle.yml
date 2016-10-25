@@ -6,9 +6,9 @@ dependencies:
     - npm install
 test:
   override:
-    - gulp ci:test
+    - npm run ci-test
 deployment:
   production:
     branch: master
     commands:
-      - gulp ci:deploy
+      - npm run ci-deploy

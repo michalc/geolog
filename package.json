@@ -46,5 +46,9 @@
     "wdio-selenium-standalone-service": "0.0.7",
     "webdriver-manager": "^10.2.4",
     "webdriverio": "^4.2.16"
+  },
+  "scripts": {
+    "ci-test": "gulp ci-test",
+    "ci-deploy": "gulp ci-deploy"
   }
 }

@@ -345,8 +345,8 @@ gulp.task('deploy-front', ['test-e2e'], () => {
   );
 });
 
-gulp.task('ci:test', ['test']);
+gulp.task('ci-test', ['test']);
 
-gulp.task('ci:deploy', ['deploy-front']);
+gulp.task('ci-deploy', ['deploy-front']);
 
 gulp.task('default', ['test']);
