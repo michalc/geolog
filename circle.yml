@@ -1,0 +1,11 @@
+machine:
+  node:
+    version: 6.9.1
+test:
+  override:
+    - gulp ci:test
+deployment:
+  production:
+    branch: master
+    commands:
+      - gulp ci:deploy

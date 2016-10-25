@@ -265,26 +265,9 @@ gulp.task('build-front', ['clean-front', 'fetch-api-client'], () => {
 });
 
 gulp.task('test-e2e', ['build-front'], () => {
-
-  // var update = function(cb) {
-  //   spawn('./node_modules/.bin/webdriver-manager', ['update'], {
-  //     stdio: 'inherit'
-  //   }).once('close', cb);
-  // };
-
-  // var start = function(cb) {
-  //   spawn('./node_modules/.bin/webdriver-manager', ['start'], {
-  //     stdio: 'inherit'
-  //   }).once('close', cb);
-  // };
-
   connect.server({
     root: 'build'
   });
-
-  // const webdriverManager = spawn('./node_modules/.bin/webdriver-manager', ['start'], {
-  //   stdio: 'inherit'
-  // });
 
   const tests = pipe(
     gulp.src('wdio.conf.js'),
@@ -293,7 +276,6 @@ gulp.task('test-e2e', ['build-front'], () => {
 
   tests.on('end', () => {
     connect.serverClose();
-    // webdriverManager.kill();
   });
 
   return tests;
@@ -324,7 +306,7 @@ gulp.task('serve-back', () => {
     .listen(8081);
 });
 
-gulp.task('deploy-front', () => {
+gulp.task('deploy-front', ['test-e2e'], () => {
   const publisher = awspublish.create({
     params: {
       Bucket: 'geolog.co'
@@ -363,4 +345,8 @@ gulp.task('deploy-front', () => {
   );
 });
 
-gulp.task('default', ['build-front']);
+gulp.task('ci:test', ['test']);
+
+gulp.task('ci:deploy', ['deploy-front']);
+
+gulp.task('default', ['test']);
