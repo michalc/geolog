@@ -51,9 +51,6 @@ const API_GATEWAY_STAGE = 'prod';
 process.env.MINIFY = '1'
 process.env.AWS_SERVICES ='cognitoidentity'
 
-const RESULTS_DIR = (process.env.CIRCLECI ? process.env.$CIRCLE_TEST_REPORTS + '/' : '') + 'results'
-gutil.log('RESULTS_DIR=' + RESULTS_DIR)
-
 function updateFunctionCodeAndAlias(zippedCode) {
   return lambda.updateFunctionCode({
     Publish: true,
@@ -182,6 +179,9 @@ gulp.task('test-cover', () => {
 });
 
 gulp.task('test', ['test-cover'], () => {
+  const RESULTS_DIR = (process.env.CIRCLECI ? process.env['$CIRCLE_TEST_REPORTS'] + '/' : '') + 'results'
+  gutil.log('RESULTS_DIR=' + RESULTS_DIR)
+
   return pipe(
     gulp.src(['src/back/**/*.spec.js', 'src/front/**/*.spec.js'], {read: false}),
     mocha({
