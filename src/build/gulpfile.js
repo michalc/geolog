@@ -200,7 +200,7 @@ gulp.task('test', ['test-cover'], () => {
 
 gulp.task('test-and-coveralls', ['test'], () => {
   return pipe(
-    gulp.src('coverage/lcov.info'),
+    gulp.src('results/coverage/lcov.info'),
     coveralls()
   );
 });
@@ -357,7 +357,7 @@ gulp.task('deploy-front', ['test-e2e'], () => {
   );
 });
 
-gulp.task('ci-test', ['test']);
+gulp.task('ci-test', ['test-and-coveralls']);
 
 gulp.task('ci-deploy', ['deploy-front']);
 
