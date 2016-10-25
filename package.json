@@ -44,6 +44,7 @@
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
     "wdio-dot-reporter": "0.0.6",
+    "wdio-junit-reporter": "^0.1.0",
     "wdio-mocha-framework": "^0.4.3",
     "wdio-selenium-standalone-service": "0.0.7",
     "webdriver-manager": "^10.2.4",
