@@ -51,6 +51,9 @@ const API_GATEWAY_STAGE = 'prod';
 process.env.MINIFY = '1'
 process.env.AWS_SERVICES ='cognitoidentity'
 
+const RESULTS_DIR = (process.env.CIRCLECI ? process.env.CIRCLE_TEST_REPORTS + '/' : '') + 'results'
+const COVERAGE_DIR = RESULTS_DIR + '/coverage'
+
 function updateFunctionCodeAndAlias(zippedCode) {
   return lambda.updateFunctionCode({
     Publish: true,
@@ -179,9 +182,6 @@ gulp.task('test-cover', () => {
 });
 
 gulp.task('test', gulp.series('test-cover', () => {
-  const RESULTS_DIR = (process.env.CIRCLECI ? process.env.CIRCLE_TEST_REPORTS + '/' : '') + 'results'
-  gutil.log('RESULTS_DIR=' + RESULTS_DIR)
-
   return pipe(
     gulp.src(['src/back/**/*.spec.js', 'src/front/**/*.spec.js'], {read: false}),
     mocha({
@@ -193,14 +193,14 @@ gulp.task('test', gulp.series('test-cover', () => {
       }
     }),
     istanbul.writeReports({
-      dir: RESULTS_DIR + '/coverage'
+      dir: COVERAGE_DIR
     })
   );
 }));
 
 gulp.task('test-and-coveralls', gulp.series('test', () => {
   return pipe(
-    gulp.src('results/coverage/lcov.info'),
+    gulp.src(COVERAGE_DIR + '/lcov.info'),
     coveralls()
   );
 }));
