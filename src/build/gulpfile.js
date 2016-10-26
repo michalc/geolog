@@ -27,6 +27,7 @@ const zip = require('gulp-zip');
 const http = require('http');
 const mergeStream = require('merge-stream')
 const pipe = require('multipipe');  // multipipe forwards errors, which is good!
+const net = require('net');
 const stream = require('stream');
 const Vinyl = require('vinyl');
 const buffer = require('vinyl-buffer');
@@ -53,6 +54,8 @@ process.env.AWS_SERVICES ='cognitoidentity'
 
 const RESULTS_DIR = (process.env.CIRCLECI ? process.env.CIRCLE_TEST_REPORTS + '/' : '') + 'results'
 const COVERAGE_DIR = RESULTS_DIR + '/coverage'
+
+const HOSTED_GRAPHITE_API_KEY = process.env.HOSTED_GRAPHITE_API_KEY;
 
 function updateFunctionCodeAndAlias(zippedCode) {
   return lambda.updateFunctionCode({
@@ -147,6 +150,17 @@ function mergeWithErrors() {
   return merged
 }
 
+function submitMetric(name, value) {
+  console.log('submitting', name, value);
+  return new Promise(function(resolve, reject) {
+    const socket = net.createConnection(2003, "560b32d8.carbon.hostedgraphite.com", function() {
+      socket.write(HOSTED_GRAPHITE_API_KEY + "." + name + " " + value + "\n");
+      socket.end();
+      resolve();
+    });
+  });
+}
+
 gulp.task('lint', () => {
   const javascript = pipe(
     gulp.src(['src/**/*.js']),
@@ -198,12 +212,37 @@ gulp.task('test', gulp.series('test-cover', () => {
   );
 }));
 
-gulp.task('test-and-coveralls', gulp.series('test', () => {
+gulp.task('submit-coverage-to-graphana', () => {
+  const coverage = istanbul.summarizeCoverage()
+  return Promise.all([
+    submitMetric("test.unit.lines.total", coverage.lines.total),
+    submitMetric("test.unit.lines.covered", coverage.lines.covered),
+    submitMetric("test.unit.lines.skipped", coverage.lines.skipped),
+    submitMetric("test.unit.statements.total", coverage.statements.total),
+    submitMetric("test.unit.statements.covered", coverage.statements.covered),
+    submitMetric("test.unit.statements.skipped", coverage.statements.skipped),
+    submitMetric("test.unit.functions.total", coverage.functions.total),
+    submitMetric("test.unit.functions.covered", coverage.functions.covered),
+    submitMetric("test.unit.functions.skipped", coverage.functions.skipped),
+    submitMetric("test.unit.branches.total", coverage.branches.total),
+    submitMetric("test.unit.branches.covered", coverage.branches.covered),
+    submitMetric("test.unit.branches.skipped", coverage.branches.skipped)
+  ]);
+});
+
+gulp.task('submit-coverage-to-coveralls', () => {
   return pipe(
     gulp.src(COVERAGE_DIR + '/lcov.info'),
     coveralls()
   );
-}));
+});
+
+gulp.task('test-and-submit',
+  gulp.series(
+    'test',
+    gulp.parallel('submit-coverage-to-graphana', 'submit-coverage-to-coveralls')
+  )
+);
 
 // One-time task
 gulp.task('permit-lambda', () => {
@@ -357,7 +396,7 @@ gulp.task('deploy-front', gulp.series('test-e2e', () => {
   );
 }));
 
-gulp.task('ci-test', gulp.series('test-and-coveralls'));
+gulp.task('ci-test', gulp.series('test-and-submit'));
 
 gulp.task('ci-deploy', gulp.series('deploy-front'));
 
