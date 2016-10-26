@@ -178,7 +178,7 @@ gulp.task('test-cover', () => {
   );
 });
 
-gulp.task('test', ['test-cover'], () => {
+gulp.task('test', gulp.series('test-cover', () => {
   const RESULTS_DIR = (process.env.CIRCLECI ? process.env.CIRCLE_TEST_REPORTS + '/' : '') + 'results'
   gutil.log('RESULTS_DIR=' + RESULTS_DIR)
 
@@ -196,14 +196,14 @@ gulp.task('test', ['test-cover'], () => {
       dir: RESULTS_DIR + '/coverage'
     })
   );
-});
+}));
 
-gulp.task('test-and-coveralls', ['test'], () => {
+gulp.task('test-and-coveralls', gulp.series('test', () => {
   return pipe(
     gulp.src('results/coverage/lcov.info'),
     coveralls()
   );
-});
+}));
 
 // One-time task
 gulp.task('permit-lambda', () => {
@@ -241,19 +241,19 @@ gulp.task('clean-download', () => {
   return del(['download/**', '!download']);
 });
 
-gulp.task('fetch-api-client', ['clean-download'], () => {
+gulp.task('fetch-api-client', gulp.series('clean-download', () => {
   return pipe(
     getApiSdk(),
     concat('apigClientFactory.js'),
     gulp.dest('download/scripts')
   );
-});
+}));
 
 gulp.task('clean-front', () => {
   return del(['build/**', '!build']);
 });
 
-gulp.task('build-front', ['clean-front', 'fetch-api-client'], () => {
+gulp.task('build-front', gulp.series(gulp.parallel('clean-front', 'fetch-api-client'), () => {
   const scripts = pipe(
     browserify({
       entries: 'src/front/scripts/app.js',
@@ -274,9 +274,9 @@ gulp.task('build-front', ['clean-front', 'fetch-api-client'], () => {
   );
 
   return mergeWithErrors(scripts, files);
-});
+}));
 
-gulp.task('test-e2e', ['build-front'], () => {
+gulp.task('test-e2e', gulp.series('build-front', () => {
   connect.server({
     root: 'build'
   });
@@ -291,7 +291,7 @@ gulp.task('test-e2e', ['build-front'], () => {
   });
 
   return tests;
-});
+}));
 
 gulp.task('watch-front', () => {
   gulp.watch(['package.json', 'src/**/*'], ['build-front']);
@@ -318,7 +318,7 @@ gulp.task('serve-back', () => {
     .listen(8081);
 });
 
-gulp.task('deploy-front', ['test-e2e'], () => {
+gulp.task('deploy-front', gulp.series('test-e2e', () => {
   const publisher = awspublish.create({
     params: {
       Bucket: 'geolog.co'
@@ -355,10 +355,10 @@ gulp.task('deploy-front', ['test-e2e'], () => {
     mergeWithErrors(index, js),
     publisher.sync()
   );
-});
+}));
 
-gulp.task('ci-test', ['test-and-coveralls']);
+gulp.task('ci-test', gulp.series('test-and-coveralls'));
 
-gulp.task('ci-deploy', ['deploy-front']);
+gulp.task('ci-deploy', gulp.series('deploy-front'));
 
-gulp.task('default', ['test']);
+gulp.task('default', gulp.series('test'));
