@@ -15,6 +15,7 @@
     "browserify": "^13.1.0",
     "browserify-shim": "^3.8.12",
     "chai": "^3.5.0",
+    "complexity-report": "^2.0.0-alpha",
     "concurrent-transform": "^1.0.0",
     "del": "^2.2.2",
     "gulp": "github:gulpjs/gulp#4.0",

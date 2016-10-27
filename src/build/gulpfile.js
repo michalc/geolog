@@ -151,7 +151,6 @@ function mergeWithErrors() {
 }
 
 function submitMetric(name, value) {
-  console.log('submitting', name, value);
   return new Promise(function(resolve, reject) {
     const socket = net.createConnection(2003, "560b32d8.carbon.hostedgraphite.com", function() {
       socket.write(HOSTED_GRAPHITE_API_KEY + "." + name + " " + value + "\n");
@@ -243,6 +242,12 @@ gulp.task('test-and-submit',
     gulp.parallel('submit-coverage-to-graphana', 'submit-coverage-to-coveralls')
   )
 );
+
+gulp.task('analyse', (cb) => {
+  exec('node_modules/.bin/cr --output ' + RESULTS_DIR + '/complexity.json --format json src', (err) => {
+    cb(err);
+  });
+});
 
 // One-time task
 gulp.task('permit-lambda', () => {
@@ -396,7 +401,10 @@ gulp.task('deploy-front', gulp.series('test-e2e', () => {
   );
 }));
 
-gulp.task('ci-test', gulp.series('test-and-submit'));
+gulp.task('ci-test', gulp.parallel(
+  gulp.series('analyse'),
+  gulp.series('test-and-submit')
+));
 
 gulp.task('ci-deploy', gulp.series('deploy-front'));
 
