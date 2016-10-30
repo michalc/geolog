@@ -1,11 +1,12 @@
 'use strict';
 
 exports.handler = (event, context, callback) => {
+  const resourceHandler = resourceHandlers[event.resource];
+  resourceHandler(event, context, callback);
+};
 
-  console.log(event)
-  console.log(context)
-
-  const done = (err, res) => callback(null, {
+const doneJson = (err, res, callback) => {
+  callback(null, {
     statusCode: err ? '400' : '200',
     body: err ? err.message : JSON.stringify(res),
     headers: {
@@ -16,21 +17,26 @@ exports.handler = (event, context, callback) => {
       'Access-Control-Allow-Origin' : "*"
     }
   });
+};
 
-  switch (event.httpMethod) {
-    case 'DELETE':
-      done(null, {'message': 'Received DELETE'});
-      break;  
-    case 'GET':
-      done(null, {'message': 'Received GET'});
-      break;
-    case 'POST':
-      done(null, {'message': 'Received POST'});
-      break;
-    case 'PUT':
-      done(null, {'message': 'Received PUT'});
-      break;
-    default:
-      done(new Error(`Unsupported method "${event.httpMethod}"`));
+const doneHtml = (err, res, callback) => {
+  callback(null, {
+    statusCode: 200,
+    body: res,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8'
+    }
+  });
+};
+
+// These must match the resources/paths setup in the API definition
+// Could have separate lambda functions for all, but would make
+// deployment more complex
+const resourceHandlers = {
+  '/': (event, context, callback) => {
+    doneHtml(null, '<html><body><p>This is <strong>some</strong> html</p>' + JSON.stringify(event) + '</body></html>', callback);
+  },
+  '/api/jobs/{id}': (event, context, callback) => {
+    doneJson(null, {'message': 'Received PUT', 'event': event, 'context': context}, callback);
   }
 };

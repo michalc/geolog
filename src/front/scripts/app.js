@@ -20,7 +20,7 @@ creds.get(() => {
     sessionToken: creds.sessionToken,
     region: 'eu-west-1'
   });
-  apigClient.jobsIdGet({id:1}).then(() => {
+  apigClient.apiJobsIdGet({id:1}).then(() => {
 
   });
 });

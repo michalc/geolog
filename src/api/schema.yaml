@@ -21,7 +21,7 @@ paths:
         type: aws_proxy
         uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog-api:production/invocations
         httpMethod: POST
-  /tracks:
+  /api/tracks:
     post:
       x-amazon-apigateway-integration:
         type: aws_proxy
@@ -80,7 +80,7 @@ paths:
               type: "string"
             Access-Control-Allow-Origin:
               type: "string"
-  /tracks/{id}:
+  /api/tracks/{id}:
     get:
       x-amazon-apigateway-integration:
         type: aws_proxy
@@ -152,7 +152,7 @@ paths:
               type: "string"
             Access-Control-Allow-Origin:
               type: "string"
-  /jobs/{id}:
+  /api/jobs/{id}:
     get:
       x-amazon-apigateway-integration:
         type: aws_proxy
