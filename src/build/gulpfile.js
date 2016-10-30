@@ -44,7 +44,8 @@ const LAMBDA_NAME = 'geolog-api'
 const LAMBDA_ALIAS = 'production'
 const BUILD_DIR = 'build';
 const API_GATEWAY_ID = '1jxogzz6a3';
-const API_GATEWAY_STAGE = 'production';
+const API_GATEWAY_STAGE_CERTIFICATION = 'certification';
+const API_GATEWAY_STAGE_PRODUCTION = 'production';
 
 // Slightly horrible that can't find a better (less global)
 // way of getting this is the way to get options into the
@@ -71,7 +72,7 @@ function updateFunctionCodeAndAlias(zippedCode) {
   });
 }
 
-function putAndDeployApi(schema) {
+function deployApiToCertification(schema) {
   return apigateway.putRestApi({
     body: schema,
     restApiId: API_GATEWAY_ID,
@@ -80,7 +81,24 @@ function putAndDeployApi(schema) {
   }).promise().then(() => {
     return apigateway.createDeployment({
       restApiId: API_GATEWAY_ID,
-      stageName: API_GATEWAY_STAGE,
+      stageName: API_GATEWAY_STAGE_CERTIFICATION,
+    }).promise();
+  });
+}
+
+function deployApiFromCertificationToProduction() {
+  return apigateway.getStage({
+    restApiId: API_GATEWAY_ID,
+    stageName: API_GATEWAY_STAGE_CERTIFICATION,
+  }).promise().then((certificationStage) => {
+    return apigateway.updateStage({
+      restApiId: API_GATEWAY_ID,
+      stageName: API_GATEWAY_STAGE_CERTIFICATION,
+      patchOperations: [{
+        op: 'replace',
+        path: '/deploymentId',
+        value: certificationStage.deploymentId
+      }]
     }).promise();
   });
 }
@@ -274,11 +292,15 @@ gulp.task('validate-api', (cb) => {
   });
 });
 
-gulp.task('deploy-api', () => {
+gulp.task('deploy-api-to-certification', () => {
   return pipe(
     gulp.src(['src/api/schema.yaml']),
-    streamIfy(putAndDeployApi)
+    streamIfy(deployApiToCertification)
   );
+});
+
+gulp.task('deploy-api-from-certification-to-production', () => {
+  return deployApiFromCertificationToProduction();
 });
 
 gulp.task('clean-download', () => {
