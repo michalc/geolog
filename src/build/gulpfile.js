@@ -40,11 +40,11 @@ const lambda = new AWS.Lambda();
 
 const exec = childProcess.exec;
 
-const LAMBDA_NAME = 'geolog'
-const LAMBDA_ALIAS = 'prod'
+const LAMBDA_NAME = 'geolog-api'
+const LAMBDA_ALIAS = 'production'
 const BUILD_DIR = 'build';
 const API_GATEWAY_ID = '1jxogzz6a3';
-const API_GATEWAY_STAGE = 'prod';
+const API_GATEWAY_STAGE = 'production';
 
 // Slightly horrible that can't find a better (less global)
 // way of getting this is the way to get options into the
@@ -60,7 +60,7 @@ const HOSTED_GRAPHITE_API_KEY = process.env.HOSTED_GRAPHITE_API_KEY;
 function updateFunctionCodeAndAlias(zippedCode) {
   return lambda.updateFunctionCode({
     Publish: true,
-    FunctionName: 'geolog',
+    FunctionName: 'geolog-api',
     ZipFile: zippedCode
   }).promise().then((resource) => {
     return lambda.updateAlias({
@@ -253,17 +253,17 @@ gulp.task('analyse', (cb) => {
 gulp.task('permit-lambda', () => {
   return lambda.addPermission({
     Action: 'lambda:InvokeFunction',
-    FunctionName: 'geolog',
+    FunctionName: 'geolog-api',
     Principal: 'apigateway.amazonaws.com',
     StatementId: 'api-gateway',
-    Qualifier: 'prod'
+    Qualifier: 'production'
   }).promise();
 });
 
 gulp.task('deploy-back', () => {
   return pipe(
-    gulp.src(['src/back/endpoint.js']),
-    zip('endpoint.zip'),
+    gulp.src(['src/back/index.js']),
+    zip('index.zip'),
     streamIfy(updateFunctionCodeAndAlias)
   );
 });
@@ -348,14 +348,14 @@ gulp.task('serve-front', () => {
 });
 
 gulp.task('serve-back', () => {
-  const endpoint = require('../back/endpoint.js');
+  const index = require('../back/index.js');
   http
     .createServer((request, response) => {
       const lambdaRequest = {
         httpMethod: request.method,
         body: null, // Need to do something with request stream to get it?
       }
-      endpoint.handler(lambdaRequest, null, (err, json) => {
+      index.handler(lambdaRequest, null, (err, json) => {
         response.end(json.body);
       });
     })
