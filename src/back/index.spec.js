@@ -2,12 +2,12 @@
 
 const assert = require('assert');
 
-const endpoint = require('./endpoint.js');
+const index = require('./index.js');
 
-describe('endpoint', () => { 
+describe('index', () => { 
   describe('GET', () => {
     it('should pass JSON with statusCode of 200', (done) => {
-      endpoint.handler({httpMethod: 'GET'}, null, (err, json) => {
+      index.handler({resource: '/api/jobs/{id}', httpMethod: 'GET'}, null, (err, json) => {
         assert.equal(json.statusCode, 200);
         done();
       }); 
