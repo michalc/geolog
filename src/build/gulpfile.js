@@ -300,7 +300,7 @@ gulp.task('clean-front', () => {
 gulp.task('build-front', gulp.series(gulp.parallel('clean-front', 'fetch-api-client'), () => {
   const scripts = pipe(
     browserify({
-      entries: 'src/front/scripts/app.js',
+      entries: 'src/front/assets/app.js',
       transform: [browserifyShim]
     }).bundle(),
     source('scripts/app.js'),
@@ -378,7 +378,6 @@ gulp.task('deploy-front', gulp.series('test-e2e', () => {
   // Cache 5 mins + gzip
   const index = pipe(
     gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR}),
-    awspublish.gzip(),
     publish({
       'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public',
       'Content-Type': 'text/html; charset=utf-8'
@@ -388,7 +387,6 @@ gulp.task('deploy-front', gulp.series('test-e2e', () => {
   // Cache 5 mins + gzip
   const js = pipe(
     gulp.src('scripts/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR}),
-    awspublish.gzip(),
     publish({
       'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public',
       'Content-Type': 'application/javascript; charset=utf-8'
