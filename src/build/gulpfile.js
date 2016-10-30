@@ -151,8 +151,8 @@ function mergeWithErrors() {
 }
 
 function submitMetric(name, value) {
-  return new Promise(function(resolve, reject) {
-    const socket = net.createConnection(2003, "560b32d8.carbon.hostedgraphite.com", function() {
+  return new Promise((resolve/*, reject*/) => {
+    const socket = net.createConnection(2003, "560b32d8.carbon.hostedgraphite.com", () => {
       socket.write(HOSTED_GRAPHITE_API_KEY + "." + name + " " + value + "\n");
       socket.end();
       resolve();
