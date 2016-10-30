@@ -19,23 +19,10 @@ const doneJson = (err, res, callback) => {
   });
 };
 
-const doneHtml = (err, res, callback) => {
-  callback(null, {
-    statusCode: 200,
-    body: res,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8'
-    }
-  });
-};
-
 // These must match the resources/paths setup in the API definition
 // Could have separate lambda functions for all, but would make
 // deployment more complex
 const resourceHandlers = {
-  '/': (event, context, callback) => {
-    doneHtml(null, '<html><body><p>This is <strong>some</strong> html</p>' + JSON.stringify(event) + '</body></html>', callback);
-  },
   '/api/jobs/{id}': (event, context, callback) => {
     doneJson(null, {'message': 'Received PUT', 'event': event, 'context': context}, callback);
   }
