@@ -21,6 +21,7 @@
     "gulp": "github:gulpjs/gulp#4.0",
     "gulp-awspublish": "^3.3.0",
     "gulp-cli": "^1.2.2",
+    "gulp-compile-handlebars": "^0.6.1",
     "gulp-concat": "^2.6.0",
     "gulp-connect": "^5.0.0",
     "gulp-coveralls": "^0.1.4",

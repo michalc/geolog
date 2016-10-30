@@ -14,6 +14,7 @@ const coveralls = require('gulp-coveralls');
 const decompress = require('gulp-decompress');
 const eslint = require('gulp-eslint');
 const filter = require('gulp-filter');
+const handlebars = require('gulp-compile-handlebars');
 const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
@@ -58,17 +59,53 @@ const COVERAGE_DIR = RESULTS_DIR + '/coverage'
 
 const HOSTED_GRAPHITE_API_KEY = process.env.HOSTED_GRAPHITE_API_KEY;
 
+const NEXT_DEPLOYMENTS = {
+  'blue': 'green',
+  'green': 'blue',
+};
+
+const BUCKETS = {
+  'assets': 'assets.geolog.co',
+  'blue': 'blue.geolog.co',
+  'green': 'green.geolog.co'
+};
+
 function updateFunctionCodeAndAlias(zippedCode) {
   return lambda.updateFunctionCode({
     Publish: true,
     FunctionName: 'geolog-api',
     ZipFile: zippedCode
   }).promise().then((resource) => {
+    gutil.log('Latest version is ' + resource.Version);
     return lambda.updateAlias({
       FunctionName: LAMBDA_NAME,
       FunctionVersion: resource.Version,
       Name: LAMBDA_ALIAS
     }).promise();
+  });
+}
+
+// Slightly horrible way of getting current deployment,
+// but it has the benefit of getting it from the actual
+// deployment as AWS sees it (not via Cloud Front), and so
+function getCurrentDeployment() {
+  return apigateway.getExport({
+    restApiId: API_GATEWAY_ID,
+    stageName: API_GATEWAY_STAGE_PRODUCTION,
+    exportType: 'swagger',
+    accepts: 'application/json',
+    parameters: {extensions: 'integrations,authorizers'}
+  }).promise().then((result) => {
+    const swagger = JSON.parse(result.body);
+    const deploymentResponse = swagger.paths['/_deployment'].get['x-amazon-apigateway-integration'].responses.default.responseTemplates['application/json'];
+    const deployment = JSON.parse(deploymentResponse).deployment;
+    return deployment;
+  });
+}
+
+function getNextDeployment() {
+  return getCurrentDeployment().then((deployment) => {
+    return NEXT_DEPLOYMENTS[deployment];
   });
 }
 
@@ -93,7 +130,7 @@ function deployApiFromCertificationToProduction() {
   }).promise().then((certificationStage) => {
     return apigateway.updateStage({
       restApiId: API_GATEWAY_ID,
-      stageName: API_GATEWAY_STAGE_CERTIFICATION,
+      stageName: API_GATEWAY_STAGE_PRODUCTION,
       patchOperations: [{
         op: 'replace',
         path: '/deploymentId',
@@ -278,7 +315,7 @@ gulp.task('permit-lambda', () => {
   }).promise();
 });
 
-gulp.task('deploy-back', () => {
+gulp.task('deploy-back-to-new-version', () => {
   return pipe(
     gulp.src(['src/back/index.js']),
     zip('index.zip'),
@@ -292,11 +329,23 @@ gulp.task('validate-api', (cb) => {
   });
 });
 
+gulp.task('get-current-deployment', () => {
+  return getCurrentDeployment();
+});
+
 gulp.task('deploy-api-to-certification', () => {
-  return pipe(
-    gulp.src(['src/api/schema.yaml']),
-    streamIfy(deployApiToCertification)
-  );
+  return getNextDeployment().then((deployment) => {
+    gutil.log('Deploying API as \'' + deployment + '\'');
+    return new Promise((resolve, reject) => {
+      pipe(
+        gulp.src(['src/api/schema.yaml']),
+        handlebars({
+          deployment: deployment
+        }),
+        streamIfy(deployApiToCertification)
+      ).on('error', reject).on('finish', resolve);
+    });
+  });
 });
 
 gulp.task('deploy-api-from-certification-to-production', () => {
@@ -384,10 +433,12 @@ gulp.task('serve-back', () => {
     .listen(8081);
 });
 
-gulp.task('deploy-front', gulp.series('test-e2e', () => {
+// All assets have MD5-cachebusted names,
+// so they can be deployed to live
+gulp.task('deploy-assets-to-production', () => {
   const publisher = awspublish.create({
     params: {
-      Bucket: 'geolog.co'
+      Bucket: BUCKETS.assets
     }
   });
 
@@ -397,35 +448,68 @@ gulp.task('deploy-front', gulp.series('test-e2e', () => {
     return concurrent(publisher.publish(headers, {force: true}), 8);
   }
 
-  // Cache 1 min
-  const index = pipe(
-    gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR}),
-    publish({
-      'Cache-Control': 'max-age=' + 60 * 1 + ', no-transform, public',
-      'Content-Type': 'text/html; charset=utf-8'
-    })
-  );
-
-  // Cache 5 mins
+  // Cache 1 week
   const js = pipe(
     gulp.src('assets/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR}),
     publish({
-      'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public',
+      'Cache-Control': 'max-age=' + 60 * 60 * 24 * 7 + ', no-transform, public',
       'Content-Type': 'application/javascript; charset=utf-8'
     })
   );
 
-  return pipe(
-    mergeWithErrors(index, js),
-    publisher.sync()
-  );
-}));
+  return js;
+});
+
+gulp.task('deploy-html-to-certification', () => {
+  return getNextDeployment().then((deployment) => {
+    const bucket = BUCKETS[deployment];
+    gutil.log('Deploying HTML to ' + bucket);
+    const publisher = awspublish.create({
+      params: {
+        Bucket: bucket
+      }
+    });
+
+    // All files are forced since gulp-awspublish doesn't
+    // sync if there are just http header changes
+    function publish(headers) {
+      return concurrent(publisher.publish(headers, {force: true}), 8);
+    }
+
+    // Cache 1 min
+    const index = pipe(
+      gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR}),
+      publish({
+        'Cache-Control': 'max-age=' + 60 * 1 + ', no-transform, public',
+        'Content-Type': 'text/html; charset=utf-8'
+      })
+    );
+
+    return pipe(
+      index,
+      publisher.sync()
+    );
+  });
+});
+
+gulp.task('deploy', gulp.series(
+  'deploy-back-to-new-version',
+  // Must be after back end, since the version of the 
+  // lambda function will be merged into the definition
+  'deploy-api-to-certification',
+  // Must be after deploying API
+  // 
+  'build-front',
+  'deploy-html-to-certification',
+  // Here would go E2E tests
+  'deploy-api-from-certification-to-production'
+));
 
 gulp.task('ci-test', gulp.parallel(
   gulp.series('analyse'),
   gulp.series('test-and-submit')
 ));
 
-gulp.task('ci-deploy', gulp.series('deploy-front'));
+gulp.task('ci-deploy', gulp.series('deploy'));
 
 gulp.task('default', gulp.series('test'));

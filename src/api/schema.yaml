@@ -11,6 +11,32 @@ produces:
   - text/html
 
 paths:
+  # Single source of truth of the current deployment (blue / green)
+  /_deployment:
+    get:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: |
+            {
+              "statusCode" : 200
+            }
+        responses:
+          "default":
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                {
+                  "deployment": "{{ deployment }}"
+                }
+      responses:
+        200:
+          description: Current deployment (blue / green)
+
   /:
     get:
       description: Request root HTML page
@@ -34,7 +60,7 @@ paths:
           description: 500 response
       x-amazon-apigateway-integration:
         type: aws
-        uri: arn:aws:apigateway:eu-west-1:s3:path/geolog.co/index.html
+        uri: arn:aws:apigateway:eu-west-1:s3:path/{{ deployment }}.geolog.co/index.html
         passthroughBehavior: "when_no_match"
         httpMethod: "GET"
         credentials: arn:aws:iam::772663561820:role/geolog-api-gateway-s3-get-object
@@ -80,7 +106,7 @@ paths:
           description: 500 response
       x-amazon-apigateway-integration:
         type: aws
-        uri: arn:aws:apigateway:eu-west-1:s3:path/geolog.co/assets/{asset}
+        uri: arn:aws:apigateway:eu-west-1:s3:path/assets.geolog.co/assets/{asset}
         passthroughBehavior: "when_no_match"
         httpMethod: "GET"
         credentials: arn:aws:iam::772663561820:role/geolog-api-gateway-s3-get-object
