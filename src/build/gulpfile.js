@@ -303,7 +303,7 @@ gulp.task('build-front', gulp.series(gulp.parallel('clean-front', 'fetch-api-cli
       entries: 'src/front/assets/app.js',
       transform: [browserifyShim]
     }).bundle(),
-    source('scripts/app.js'),
+    source('assets/app.js'),
     buffer(),
     // uglify(),
     rev(),
@@ -375,18 +375,18 @@ gulp.task('deploy-front', gulp.series('test-e2e', () => {
     return concurrent(publisher.publish(headers, {force: true}), 8);
   }
 
-  // Cache 5 mins + gzip
+  // Cache 1 min
   const index = pipe(
     gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR}),
     publish({
-      'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public',
+      'Cache-Control': 'max-age=' + 60 * 1 + ', no-transform, public',
       'Content-Type': 'text/html; charset=utf-8'
     })
   );
 
-  // Cache 5 mins + gzip
+  // Cache 5 mins
   const js = pipe(
-    gulp.src('scripts/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR}),
+    gulp.src('assets/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR}),
     publish({
       'Cache-Control': 'max-age=' + 60 * 5 + ', no-transform, public',
       'Content-Type': 'application/javascript; charset=utf-8'
