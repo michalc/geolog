@@ -1,7 +1,7 @@
 'use strict';
 
 const AWS = require('aws-sdk');
-const apigClientFactory = require('apig-client-factory');
+const apigClientFactory = require('./apigClientFactory');
 
 // Identity pool already configured to use roles
 const creds = new AWS.CognitoIdentityCredentials({

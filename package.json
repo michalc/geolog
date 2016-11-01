@@ -1,10 +1,14 @@
 {
   "browser": {
-    "apig-client-factory": "./download/scripts/apigClientFactory.js"
+    "api-gateway": "./lib/apiGateway.js",
+    "uritemplate": "./lib/uritemplate.js"
   },
   "browserify-shim": {
-    "./download/scripts/apigClientFactory.js": {
-      "exports": "apigClientFactory"
+    "./lib/apiGateway.js": {
+      "exports": "apiGateway"
+    },
+    "./lib/uritemplate.js": {
+      "exports": "uritemplate"
     }
   },
   "description": "Source for geolog.co",

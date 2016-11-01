@@ -149,7 +149,7 @@ function getApiSdk() {
 
   apigateway.getSdk({
     restApiId: API_GATEWAY_ID,
-    stageName: API_GATEWAY_STAGE,
+    stageName: API_GATEWAY_STAGE_PRODUCTION,
     sdkType: 'javascript'
   }).promise().then((response) => {
     source.push(new Vinyl({
@@ -163,11 +163,11 @@ function getApiSdk() {
 
   return pipe(
     source,
-    decompress(),
-    filter('apiGateway-js-sdk/**/*.js'),
-    rename((path) => {
-      path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/, '');
-    })
+    decompress()//,
+    //filter('apiGateway-js-sdk/**/*.js'),
+    // rename((path) => {
+    //   path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/, '');
+    //})
   );
 }
 
