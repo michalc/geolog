@@ -296,7 +296,7 @@ gulp.task('api-deploy-to-certification', () => {
     gutil.log('Deploying API as \'' + deployment + '\'');
     return new Promise((resolve, reject) => {
       pipe(
-        gulp.src(['src/api/schema.yaml']),
+        gulp.src(['src/api/schema.yml']),
         handlebars({
           deployment: deployment
         }),
