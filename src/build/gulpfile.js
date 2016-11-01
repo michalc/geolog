@@ -1,3 +1,5 @@
+/* eslint-env es6, node */
+
 'use strict';
 
 const AWS = require('aws-sdk');
@@ -8,17 +10,13 @@ const concurrent = require('concurrent-transform');
 const del = require('del');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
-const concat = require('gulp-concat');
 const connect = require('gulp-connect');
 const coveralls = require('gulp-coveralls');
-const decompress = require('gulp-decompress');
 const eslint = require('gulp-eslint');
-const filter = require('gulp-filter');
 const handlebars = require('gulp-compile-handlebars');
 const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
-const rename = require('gulp-rename');
 const rev = require('gulp-rev');
 const revReplace = require('gulp-rev-replace');
 // const uglify = require('gulp-uglify');
@@ -30,7 +28,6 @@ const mergeStream = require('merge-stream')
 const pipe = require('multipipe');  // multipipe forwards errors, which is good!
 const net = require('net');
 const stream = require('stream');
-const Vinyl = require('vinyl');
 const buffer = require('vinyl-buffer');
 const source = require('vinyl-source-stream');
 
@@ -140,36 +137,6 @@ function deployApiFromCertificationToProduction() {
   });
 }
 
-function getApiSdk() {
-  const source = stream.Readable({
-    objectMode: true,
-    read: () => {
-    }
-  });
-
-  apigateway.getSdk({
-    restApiId: API_GATEWAY_ID,
-    stageName: API_GATEWAY_STAGE_PRODUCTION,
-    sdkType: 'javascript'
-  }).promise().then((response) => {
-    source.push(new Vinyl({
-      path: 'api-gateway-client.zip',
-      contents: response.body
-    }));
-    source.push(null);
-  }).catch((err) => {
-    source.emit('error', err)
-  });
-
-  return pipe(
-    source,
-    decompress()//,
-    //filter('apiGateway-js-sdk/**/*.js'),
-    // rename((path) => {
-    //   path.dirname = path.dirname.replace(/^apiGateway-js-sdk\/?/, '');
-    //})
-  );
-}
 
 // Returns a function that calls the original,
 // calling the cb on promise success/failure as appropriate
@@ -352,23 +319,11 @@ gulp.task('deploy-api-from-certification-to-production', () => {
   return deployApiFromCertificationToProduction();
 });
 
-gulp.task('clean-download', () => {
-  return del(['download/**', '!download']);
-});
-
-gulp.task('fetch-api-client', gulp.series('clean-download', () => {
-  return pipe(
-    getApiSdk(),
-    concat('apigClientFactory.js'),
-    gulp.dest('download/scripts')
-  );
-}));
-
 gulp.task('clean-front', () => {
   return del(['build/**', '!build']);
 });
 
-gulp.task('build-front', gulp.series(gulp.parallel('clean-front', 'fetch-api-client'), () => {
+gulp.task('build-front', gulp.series('clean-front', () => {
   const scripts = pipe(
     browserify({
       entries: 'src/front/assets/app.js',

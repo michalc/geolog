@@ -1,7 +1,5 @@
 .DS_Store
 /build
 /coverage
-/download
 /node_modules
 /results
-

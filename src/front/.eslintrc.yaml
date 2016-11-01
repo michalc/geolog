@@ -1,0 +1,6 @@
+env:
+  browser: true
+globals:
+  # browserify
+  require: true
+  module: true
