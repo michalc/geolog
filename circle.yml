@@ -6,9 +6,9 @@ dependencies:
     - npm install
 test:
   override:
-    - npm run ci-test
+    - npm run test
 deployment:
   production:
     branch: master
     commands:
-      - npm run ci-deploy
+      - npm run deploy
