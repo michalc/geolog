@@ -53,7 +53,7 @@
     "webdriverio": "^4.2.16"
   },
   "scripts": {
-    "ci-test": "gulp ci-test",
-    "ci-deploy": "gulp ci-deploy"
+    "test": "gulp test",
+    "deploy": "gulp deploy"
   }
 }
