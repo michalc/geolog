@@ -338,20 +338,10 @@ gulp.task('front-build', () => {
 });
 
 gulp.task('test-e2e-run', () => {
-  connect.server({
-    root: 'build'
-  });
-
-  const tests = pipe(
+  return pipe(
     gulp.src('wdio.conf.js'),
     webdriver()
   );
-
-  tests.on('end', () => {
-    connect.serverClose();
-  });
-
-  return tests;
 });
 
 gulp.task('front-watch', () => {
