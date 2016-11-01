@@ -1,5 +1,3 @@
-/* eslint-env es6, node */
-
 'use strict';
 
 const AWS = require('aws-sdk');
@@ -106,7 +104,7 @@ function getNextDeployment() {
   });
 }
 
-function deployApiToCertification(schema) {
+function apiDeployToCertification(schema) {
   return apigateway.putRestApi({
     body: schema,
     restApiId: API_GATEWAY_ID,
@@ -120,7 +118,7 @@ function deployApiToCertification(schema) {
   });
 }
 
-function deployApiFromCertificationToProduction() {
+function apiDeployToProduction() {
   return apigateway.getStage({
     restApiId: API_GATEWAY_ID,
     stageName: API_GATEWAY_STAGE_CERTIFICATION,
@@ -208,7 +206,7 @@ gulp.task('lint', () => {
   return mergeWithErrors(javascript, html);
 });
 
-gulp.task('test-cover', () => {
+gulp.task('test-unit-coverage-setup', () => {
   return pipe(
     gulp.src(['src/**/*.js', '!src/**/*.spec.js']),
     istanbul(),
@@ -216,7 +214,7 @@ gulp.task('test-cover', () => {
   );
 });
 
-gulp.task('test', gulp.series('test-cover', () => {
+gulp.task('test-unit-run', () => {
   return pipe(
     gulp.src(['src/back/**/*.spec.js', 'src/front/**/*.spec.js'], {read: false}),
     mocha({
@@ -231,9 +229,9 @@ gulp.task('test', gulp.series('test-cover', () => {
       dir: COVERAGE_DIR
     })
   );
-}));
+});
 
-gulp.task('submit-coverage-to-graphana', () => {
+gulp.task('test-unit-coverage-submit-graphana', () => {
   const coverage = istanbul.summarizeCoverage()
   return Promise.all([
     submitMetric("test.unit.lines.total", coverage.lines.total),
@@ -251,21 +249,14 @@ gulp.task('submit-coverage-to-graphana', () => {
   ]);
 });
 
-gulp.task('submit-coverage-to-coveralls', () => {
+gulp.task('test-unit-coverage-submit-coveralls', () => {
   return pipe(
     gulp.src(COVERAGE_DIR + '/lcov.info'),
     coveralls()
   );
 });
 
-gulp.task('test-and-submit',
-  gulp.series(
-    'test',
-    gulp.parallel('submit-coverage-to-graphana', 'submit-coverage-to-coveralls')
-  )
-);
-
-gulp.task('analyse', (cb) => {
+gulp.task('static-analysis-run', (cb) => {
   exec('node_modules/.bin/cr --output ' + RESULTS_DIR + '/complexity.json --format json src', (err) => {
     cb(err);
   });
@@ -282,7 +273,7 @@ gulp.task('permit-lambda', () => {
   }).promise();
 });
 
-gulp.task('deploy-back-to-new-version', () => {
+gulp.task('back-deploy', () => {
   return pipe(
     gulp.src(['src/back/index.js']),
     zip('index.zip'),
@@ -290,8 +281,8 @@ gulp.task('deploy-back-to-new-version', () => {
   );
 });
 
-gulp.task('validate-api', (cb) => {
-  exec('node_modules/.bin/swagger-tools validate src/api/schema.yaml', (err) => {
+gulp.task('api-validate', (cb) => {
+  exec('node_modules/.bin/swagger-tools validate src/api/schema.yml', (err) => {
     cb(err);
   });
 });
@@ -300,7 +291,7 @@ gulp.task('get-current-deployment', () => {
   return getCurrentDeployment();
 });
 
-gulp.task('deploy-api-to-certification', () => {
+gulp.task('api-deploy-to-certification', () => {
   return getNextDeployment().then((deployment) => {
     gutil.log('Deploying API as \'' + deployment + '\'');
     return new Promise((resolve, reject) => {
@@ -309,21 +300,21 @@ gulp.task('deploy-api-to-certification', () => {
         handlebars({
           deployment: deployment
         }),
-        streamIfy(deployApiToCertification)
+        streamIfy(apiDeployToCertification)
       ).on('error', reject).on('finish', resolve);
     });
   });
 });
 
-gulp.task('deploy-api-from-certification-to-production', () => {
-  return deployApiFromCertificationToProduction();
+gulp.task('api-deploy-to-production', () => {
+  return apiDeployToProduction();
 });
 
-gulp.task('clean-front', () => {
+gulp.task('front-clean', () => {
   return del(['build/**', '!build']);
 });
 
-gulp.task('build-front', gulp.series('clean-front', () => {
+gulp.task('front-build', () => {
   const scripts = pipe(
     browserify({
       entries: 'src/front/assets/app.js',
@@ -344,9 +335,9 @@ gulp.task('build-front', gulp.series('clean-front', () => {
   );
 
   return mergeWithErrors(scripts, files);
-}));
+});
 
-gulp.task('test-e2e', gulp.series('build-front', () => {
+gulp.task('test-e2e-run', () => {
   connect.server({
     root: 'build'
   });
@@ -361,19 +352,19 @@ gulp.task('test-e2e', gulp.series('build-front', () => {
   });
 
   return tests;
-}));
-
-gulp.task('watch-front', () => {
-  gulp.watch(['package.json', 'src/**/*'], ['build-front']);
 });
 
-gulp.task('serve-front', () => {
+gulp.task('front-watch', () => {
+  gulp.watch(['package.json', 'src/**/*'], ['front-build']);
+});
+
+gulp.task('front-serve', () => {
   return connect.server({
     root: 'build'
   });
 });
 
-gulp.task('serve-back', () => {
+gulp.task('back-serve', () => {
   const index = require('../back/index.js');
   http
     .createServer((request, response) => {
@@ -390,7 +381,7 @@ gulp.task('serve-back', () => {
 
 // All assets have MD5-cachebusted names,
 // so they can be deployed to live
-gulp.task('deploy-assets-to-production', () => {
+gulp.task('front-assets-deploy-production', () => {
   const publisher = awspublish.create({
     params: {
       Bucket: BUCKETS.assets
@@ -415,7 +406,7 @@ gulp.task('deploy-assets-to-production', () => {
   return js;
 });
 
-gulp.task('deploy-html-to-certification', () => {
+gulp.task('front-html-deploy-certification', () => {
   return getNextDeployment().then((deployment) => {
     const bucket = BUCKETS[deployment];
     gutil.log('Deploying HTML to ' + bucket);
@@ -447,24 +438,41 @@ gulp.task('deploy-html-to-certification', () => {
   });
 });
 
+gulp.task('test', gulp.parallel(
+  'api-validate',
+  gulp.series(
+    'lint',
+    gulp.parallel(
+      'static-analysis-run',
+      gulp.series(
+        'test-unit-coverage-setup',
+        'test-unit-run',
+        gulp.parallel(
+          'test-unit-coverage-submit-graphana',
+          'test-unit-coverage-submit-coveralls'
+        )
+      ) 
+    )
+  )
+));
+
 gulp.task('deploy', gulp.series(
-  'deploy-back-to-new-version',
-  // Must be after back end, since the version of the 
-  // lambda function will be merged into the definition
-  'deploy-api-to-certification',
-  // Must be after deploying API
-  // 
-  'build-front',
-  'deploy-html-to-certification',
-  // Here would go E2E tests
-  'deploy-api-from-certification-to-production'
+  gulp.parallel(
+    gulp.series(
+      'front-clean',
+      'front-build',
+      gulp.parallel(
+        'front-assets-deploy-production',
+        'front-html-deploy-certification'
+      )
+    ),
+    gulp.series(
+      'back-deploy',
+      'api-deploy-to-certification'
+    )
+  ),
+  'test-e2e-run',
+  'api-deploy-to-production'
 ));
-
-gulp.task('ci-test', gulp.parallel(
-  gulp.series('analyse'),
-  gulp.series('test-and-submit')
-));
-
-gulp.task('ci-deploy', gulp.series('deploy'));
 
 gulp.task('default', gulp.series('test'));

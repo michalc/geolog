@@ -1,6 +1,3 @@
-/* eslint-env node, mocha */
-/* global browser */
-
 describe('geolog', () => {
   it('has the title geolog', () => {
     browser.url('http://localhost:8080/');
