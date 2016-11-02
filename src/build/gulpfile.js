@@ -105,6 +105,7 @@ function getNextDeployment() {
 }
 
 function apiDeployToCertification(schema) {
+  gutil.log('Deploying API to certification');
   return apigateway.putRestApi({
     body: schema,
     restApiId: API_GATEWAY_ID,
@@ -115,6 +116,8 @@ function apiDeployToCertification(schema) {
       restApiId: API_GATEWAY_ID,
       stageName: API_GATEWAY_STAGE_CERTIFICATION,
     }).promise();
+  }).then(function(res) {
+    gutil.log('Deployed to certification: ' + res.id);
   });
 }
 
@@ -123,6 +126,7 @@ function apiDeployToProduction() {
     restApiId: API_GATEWAY_ID,
     stageName: API_GATEWAY_STAGE_CERTIFICATION,
   }).promise().then((certificationStage) => {
+    gutil.log('Deploying to production: ' + certificationStage.deploymentId)
     return apigateway.updateStage({
       restApiId: API_GATEWAY_ID,
       stageName: API_GATEWAY_STAGE_PRODUCTION,
@@ -136,27 +140,22 @@ function apiDeployToProduction() {
 }
 
 
-// Returns a function that calls the original,
-// calling the cb on promise success/failure as appropriate
-function callbackIfy(original, cb) {
-  return (...args) => {
-    original.apply(this, args).then(() => {
-      cb();
-    }, (err) => {
-      cb(err || true);
-    });
-  }
-}
-
-// Returns a transform stream that calls (a callbackIfied version of)
-// the original function for each file contents in the stream
+// Returns a transform stream that calls the original
+// function for each file contents in the stream
 function streamIfy(original) {
-  return stream.Transform({
+  const transformStream = stream.Transform({
     objectMode: true,
-    transform: (file, enc, cb) => {
-      callbackIfy(original, cb)(file.contents);
+    transform: (file, enc, next) => {
+      original(file.contents).then((results) => {
+        next();
+      }, (error) => {
+        // Not sure if this does anything?
+        transformStream.emit('error', error);
+        next();
+      });
     }
   });
+  return transformStream;
 }
 
 // Annoyling mergeStream does not propagate errors
