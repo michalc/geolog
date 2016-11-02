@@ -388,7 +388,7 @@ gulp.task('front-assets-deploy-production', () => {
   const js = pipe(
     gulp.src('assets/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR}),
     publish({
-      'Cache-Control': 'max-age=' + 60 * 60 * 24 * 7 + ', no-transform, public',
+      'Cache-Control': 'max-age=' + 60 * 60 * 24 * 7 + ', public',
       'Content-Type': 'application/javascript; charset=utf-8'
     })
   );
@@ -416,7 +416,7 @@ gulp.task('front-html-deploy-certification', () => {
     const index = pipe(
       gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR}),
       publish({
-        'Cache-Control': 'max-age=' + 60 * 1 + ', no-transform, public',
+        'Cache-Control': 'max-age=' + 60 * 1 + ', public',
         'Content-Type': 'text/html; charset=utf-8'
       })
     );
