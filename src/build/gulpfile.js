@@ -23,7 +23,6 @@ const webdriver = require('gulp-webdriver');
 const zip = require('gulp-zip');
 const http = require('http');
 const mergeStream = require('merge-stream')
-const pipe = require('multipipe');  // multipipe forwards errors, which is good!
 const net = require('net');
 const stream = require('stream');
 const buffer = require('vinyl-buffer');
@@ -36,8 +35,10 @@ const lambda = new AWS.Lambda();
 
 const exec = childProcess.exec;
 
-const LAMBDA_NAME = 'geolog-api'
-const LAMBDA_ALIAS = 'production'
+const LAMBDA_NAME = 'geolog-api';
+// There is no production lambda alias.
+// The certification alias is for debugging
+const LAMBDA_ALIAS_CERTIFICATION = 'certification';
 const BUILD_DIR = 'build';
 const API_GATEWAY_ID = '1jxogzz6a3';
 const API_GATEWAY_STAGE_CERTIFICATION = 'certification';
@@ -65,17 +66,18 @@ const BUCKETS = {
   'green': 'green.geolog.co'
 };
 
-function updateFunctionCodeAndAlias(zippedCode) {
+function updateLambda(zippedCode) {
+  gutil.log('Updating lambda');
   return lambda.updateFunctionCode({
     Publish: true,
     FunctionName: 'geolog-api',
     ZipFile: zippedCode
   }).promise().then((resource) => {
-    gutil.log('Latest version is ' + resource.Version);
+    gutil.log('Lambda updated with version: ' + resource.Version);
     return lambda.updateAlias({
       FunctionName: LAMBDA_NAME,
       FunctionVersion: resource.Version,
-      Name: LAMBDA_ALIAS
+      Name: LAMBDA_ALIAS_CERTIFICATION
     }).promise();
   });
 }
@@ -116,7 +118,7 @@ function apiDeployToCertification(schema) {
       restApiId: API_GATEWAY_ID,
       stageName: API_GATEWAY_STAGE_CERTIFICATION,
     }).promise();
-  }).then(function(res) {
+  }).then((res) => {
     gutil.log('Deployed to certification: ' + res.id);
   });
 }
@@ -139,34 +141,49 @@ function apiDeployToProduction() {
   });
 }
 
-
 // Returns a transform stream that calls the original
 // function for each file contents in the stream
 function streamIfy(original) {
-  const transformStream = stream.Transform({
+  return stream.Transform({
     objectMode: true,
-    transform: (file, enc, next) => {
+    transform: function (file, enc, callback) {
       original(file.contents).then((results) => {
-        next();
+        this.push(results);
+        callback();
       }, (error) => {
-        // Not sure if this does anything?
-        transformStream.emit('error', error);
-        next();
+        this.emit('error', error);
       });
     }
   });
-  return transformStream;
+}
+
+function streamToPromise(stream) {
+  return new Promise((resolve, reject) => {
+      stream.on('finish', resolve);
+      stream.on('error', reject);
+  });
 }
 
 // Annoyling mergeStream does not propagate errors
-function mergeWithErrors() {
-  const merged = mergeStream.apply(null, arguments);
-  for (let stream of arguments) {
+function mergeWithErrors(...streams) {
+  const merged = mergeStream.apply(null, streams);
+
+  streams.forEach((stream) => {
     stream.on('error', (error) => {
       merged.emit('error', error);
     });
-  }
+  });
   return merged
+}
+
+function pipeWithErrors(...streams) {
+  const pipe = streams.reduce((streamA, streamB) => {
+    return streamA.pipe(streamB);
+  });
+  streams.slice(0, -1).forEach((stream) => {
+    stream.on('error', (error) => pipe.emit('error', error));
+  });
+  return pipe;
 }
 
 function submitMetric(name, value) {
@@ -180,7 +197,7 @@ function submitMetric(name, value) {
 }
 
 gulp.task('lint', () => {
-  const javascript = pipe(
+  const javascript = pipeWithErrors(
     gulp.src(['src/**/*.js']),
     eslint(),
     eslint.format(),
@@ -196,7 +213,7 @@ gulp.task('lint', () => {
     })
   );
 
-  const html = pipe(
+  const html = pipeWithErrors(
     gulp.src(['src/**/*.html']),
     htmlhint(),
     htmlhint.failReporter()
@@ -206,7 +223,7 @@ gulp.task('lint', () => {
 });
 
 gulp.task('test-unit-coverage-setup', () => {
-  return pipe(
+  return pipeWithErrors(
     gulp.src(['src/**/*.js', '!src/**/*.spec.js']),
     istanbul(),
     istanbul.hookRequire()
@@ -214,7 +231,7 @@ gulp.task('test-unit-coverage-setup', () => {
 });
 
 gulp.task('test-unit-run', () => {
-  return pipe(
+  return pipeWithErrors(
     gulp.src(['src/back/**/*.spec.js', 'src/front/**/*.spec.js'], {read: false}),
     mocha({
     }),
@@ -249,7 +266,7 @@ gulp.task('test-unit-coverage-submit-graphana', () => {
 });
 
 gulp.task('test-unit-coverage-submit-coveralls', () => {
-  return pipe(
+  return pipeWithErrors(
     gulp.src(COVERAGE_DIR + '/lcov.info'),
     coveralls()
   );
@@ -273,10 +290,10 @@ gulp.task('permit-lambda', () => {
 });
 
 gulp.task('back-deploy', () => {
-  return pipe(
+  return pipeWithErrors(
     gulp.src(['src/back/index.js']),
     zip('index.zip'),
-    streamIfy(updateFunctionCodeAndAlias)
+    streamIfy(updateLambda)
   );
 });
 
@@ -290,18 +307,30 @@ gulp.task('get-current-deployment', () => {
   return getCurrentDeployment();
 });
 
-gulp.task('api-deploy-to-certification', () => {
-  return getNextDeployment().then((deployment) => {
-    gutil.log('Deploying API as \'' + deployment + '\'');
-    return new Promise((resolve, reject) => {
-      pipe(
-        gulp.src(['src/api/schema.yml']),
-        handlebars({
-          deployment: deployment
-        }),
-        streamIfy(apiDeployToCertification)
-      ).on('error', reject).on('finish', resolve);
-    });
+gulp.task('api-deploy-certification', () => {
+  const lambdaPromise = lambda.getAlias({
+    FunctionName: LAMBDA_NAME,
+    Name: LAMBDA_ALIAS_CERTIFICATION
+  }).promise().then((alias) => {
+    return alias.FunctionVersion;
+  });
+
+  const deploymentPromise = getNextDeployment();
+
+  return Promise.all([lambdaPromise, deploymentPromise]).then((results) => {
+    const lambdaVersion = results[0];
+    const deployment = results[1];
+
+    gutil.log('Deploying API as \'' + deployment + '\' with lambda version ' + lambdaVersion);
+
+    return streamToPromise(pipeWithErrors(
+      gulp.src(['src/api/schema.yml']),
+      handlebars({
+        deployment: deployment,
+        lambdaVersion: lambdaVersion
+      }),
+      streamIfy(apiDeployToCertification)
+    ));
   });
 });
 
@@ -314,7 +343,7 @@ gulp.task('front-clean', () => {
 });
 
 gulp.task('front-build', () => {
-  const scripts = pipe(
+  const scripts = pipeWithErrors(
     browserify({
       entries: 'src/front/assets/app.js',
       transform: [browserifyShim]
@@ -327,7 +356,7 @@ gulp.task('front-build', () => {
     rev.manifest()
   );
 
-  const files = pipe(
+  const files = pipeWithErrors(
     gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'}),
     revReplace({manifest: scripts}),
     gulp.dest('build')
@@ -337,7 +366,7 @@ gulp.task('front-build', () => {
 });
 
 gulp.task('test-e2e-run', () => {
-  return pipe(
+  return pipeWithErrors(
     gulp.src('wdio.conf.js'),
     webdriver()
   );
@@ -384,7 +413,7 @@ gulp.task('front-assets-deploy-production', () => {
   }
 
   // Cache 1 week
-  const js = pipe(
+  const js = pipeWithErrors(
     gulp.src('assets/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR}),
     publish({
       'Cache-Control': 'max-age=' + 60 * 60 * 24 * 7 + ', public',
@@ -412,7 +441,7 @@ gulp.task('front-html-deploy-certification', () => {
     }
 
     // Cache 1 min
-    const index = pipe(
+    const index = pipeWithErrors(
       gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR}),
       publish({
         'Cache-Control': 'max-age=' + 60 * 1 + ', public',
@@ -420,7 +449,7 @@ gulp.task('front-html-deploy-certification', () => {
       })
     );
 
-    return pipe(
+    return pipeWithErrors(
       index,
       publisher.sync()
     );
@@ -457,7 +486,7 @@ gulp.task('deploy', gulp.series(
     ),
     gulp.series(
       'back-deploy',
-      'api-deploy-to-certification'
+      'api-deploy-certification'
     )
   ),
   'test-e2e-run',

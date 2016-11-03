@@ -41,7 +41,6 @@
     "merge-stream": "^1.0.0",
     "mocha": "^3.1.2",
     "mocha-junit-reporter": "^1.12.1",
-    "multipipe": "^1.0.1",
     "swagger-tools": "^0.10.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
