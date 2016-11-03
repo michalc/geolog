@@ -166,8 +166,8 @@ function streamToPromise(stream) {
 
 // Annoyling mergeStream does not propagate errors
 function mergeWithErrors(...streams) {
-  const merged = streams.reduce((merged, streamB) => {
-    return merged.add(streamB)
+  const merged = streams.reduce((merged, stream) => {
+    return merged.add(stream)
   }, mergeStream())
 
   streams.forEach((stream) => {
