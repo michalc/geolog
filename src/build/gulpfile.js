@@ -159,8 +159,8 @@ function streamIfy(original) {
 
 function streamToPromise(stream) {
   return new Promise((resolve, reject) => {
-      stream.on('finish', resolve);
-      stream.on('error', reject);
+    stream.on('finish', resolve);
+    stream.on('error', reject);
   });
 }
 
@@ -171,21 +171,19 @@ function mergeWithErrors(...streams) {
   }, mergeStream())
 
   streams.forEach((stream) => {
-    stream.on('error', (error) => {
-      merged.emit('error', error);
-    });
+    stream.on('error', (error) => merged.emit('error', error));
   });
   return merged
 }
 
 function pipeWithErrors(...streams) {
-  const pipe = streams.reduce((streamA, streamB) => {
-    return streamA.pipe(streamB);
+  const piped = streams.reduce((piped, stream) => {
+    return piped.pipe(stream);
   });
   streams.slice(0, -1).forEach((stream) => {
-    stream.on('error', (error) => pipe.emit('error', error));
+    stream.on('error', (error) => piped.emit('error', error));
   });
-  return pipe;
+  return piped;
 }
 
 function submitMetric(name, value) {
