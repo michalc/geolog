@@ -1,5 +1,6 @@
 'use strict';
 
+const parallelLimit = require('async/parallelLimit');
 const AWS = require('aws-sdk');
 const browserify = require('browserify')
 const browserifyShim = require('browserify-shim')
@@ -164,14 +165,19 @@ function streamToPromise(stream) {
   });
 }
 
-function submitMetric(name, value) {
-  return new Promise((resolve/*, reject*/) => {
-    const socket = net.createConnection(2003, "560b32d8.carbon.hostedgraphite.com", () => {
-      socket.write(HOSTED_GRAPHITE_API_KEY + "." + name + " " + value + "\n");
-      socket.end();
-      resolve();
-    });
+function submitMetric(name, value, callback) {
+  const socket = net.createConnection(2003, "560b32d8.carbon.hostedgraphite.com", () => {
+    socket.write(HOSTED_GRAPHITE_API_KEY + "." + name + " " + value + "\n");
+    socket.end();
+    callback();
   });
+}
+
+function submitMetrics(data, callback) {
+  const funcs = data.map((point) => {
+    return (callback) => submitMetric(point.name, point.value, callback);
+  });
+  parallelLimit(funcs, 16, callback)
 }
 
 gulp.task('lint', () => {
@@ -207,22 +213,22 @@ gulp.task('test-unit-run', () => {
     }));
 });
 
-gulp.task('test-unit-coverage-submit-graphana', () => {
+gulp.task('test-unit-coverage-submit-graphana', (cb) => {
   const coverage = istanbul.summarizeCoverage();
-  return Promise.all([
-    submitMetric("test.unit.lines.total", coverage.lines.total),
-    submitMetric("test.unit.lines.covered", coverage.lines.covered),
-    submitMetric("test.unit.lines.skipped", coverage.lines.skipped),
-    submitMetric("test.unit.statements.total", coverage.statements.total),
-    submitMetric("test.unit.statements.covered", coverage.statements.covered),
-    submitMetric("test.unit.statements.skipped", coverage.statements.skipped),
-    submitMetric("test.unit.functions.total", coverage.functions.total),
-    submitMetric("test.unit.functions.covered", coverage.functions.covered),
-    submitMetric("test.unit.functions.skipped", coverage.functions.skipped),
-    submitMetric("test.unit.branches.total", coverage.branches.total),
-    submitMetric("test.unit.branches.covered", coverage.branches.covered),
-    submitMetric("test.unit.branches.skipped", coverage.branches.skipped)
-  ]);
+  submitMetrics([
+    {name: "test.unit.lines.total", value: coverage.lines.total},
+    {name: "test.unit.lines.covered", value: coverage.lines.covered},
+    {name: "test.unit.lines.skipped", value: coverage.lines.skipped},
+    {name: "test.unit.statements.total", value: coverage.statements.total},
+    {name: "test.unit.statements.covered", value: coverage.statements.covered},
+    {name: "test.unit.statements.skipped", value: coverage.statements.skipped},
+    {name: "test.unit.functions.total", value: coverage.functions.total},
+    {name: "test.unit.functions.covered", value: coverage.functions.covered},
+    {name: "test.unit.functions.skipped", value: coverage.functions.skipped},
+    {name: "test.unit.branches.total", value: coverage.branches.total},
+    {name: "test.unit.branches.covered", value: coverage.branches.covered},
+    {name: "test.unit.branches.skipped", value: coverage.branches.skipped}
+  ], cb);
 });
 
 gulp.task('test-unit-coverage-submit-coveralls', () => {
@@ -234,6 +240,30 @@ gulp.task('static-analysis-run', (cb) => {
   exec('node_modules/.bin/cr --output ' + RESULTS_DIR + '/complexity.json --format json src', (err) => {
     cb(err);
   });
+});
+
+gulp.task('static-analysis-submit-graphana', () => {
+  return gulp.src([RESULTS_DIR + '/complexity.json'])
+    .pipe(stream.Transform({
+      objectMode: true,
+      transform: function(file, enc, callback) {
+        const complexity = JSON.parse(file.contents);
+        submitMetrics([
+          {name: "analysis.static.firstOrderDensity", value: complexity.firstOrderDensity},
+          {name: "analysis.static.changeCost", value: complexity.changeCost},
+          {name: "analysis.static.coreSize", value: complexity.coreSize},
+          {name: "analysis.static.loc", value: complexity.loc},
+          {name: "analysis.static.cyclomatic", value: complexity.cyclomatic},
+          {name: "analysis.static.effort", value: complexity.effort},
+          {name: "analysis.static.params", value: complexity.params},
+          {name: "analysis.static.maintainability", value: complexity.maintainability}
+        ], callback);
+
+        // complexity.reports.forEach((report) => {
+        //   console.log(report.path);
+        // });
+      }
+    }));
 });
 
 // One-time task
@@ -404,7 +434,7 @@ gulp.task('test', gulp.parallel(
   gulp.series(
     'lint',
     gulp.parallel(
-      'static-analysis-run',
+      gulp.series('static-analysis-run', 'static-analysis-submit-graphana'),
       gulp.series(
         'test-unit-coverage-setup',
         'test-unit-run',
