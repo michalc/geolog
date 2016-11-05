@@ -177,17 +177,7 @@ function submitMetric(name, value) {
 gulp.task('lint', () => {
   const javascript = gulp.src(['src/**/*.js'])
     .pipe(eslint())
-    .pipe(eslint.format())
-    .pipe(eslint.results((results/*, cb */) => {
-      if (results.errorCount) {
-        // If using cb, gulp-eslint throws an exception,
-        // rather than just emitting an error, which causes
-        // an non-helpful stack strace
-        javascript.emit('error', new gutil.PluginError('eslint', {
-          message: 'Failed linting'
-        }));
-      }
-    }));
+    .pipe(eslint.format());
 
   const html = gulp.src(['src/**/*.html'])
     .pipe(htmlhint())
