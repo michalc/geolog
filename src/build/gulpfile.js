@@ -164,28 +164,6 @@ function streamToPromise(stream) {
   });
 }
 
-// Annoyling mergeStream does not propagate errors
-function mergeWithErrors(...streams) {
-  const merged = streams.reduce((merged, stream) => {
-    return merged.add(stream)
-  }, mergeStream())
-
-  streams.forEach((stream) => {
-    stream.on('error', (error) => merged.emit('error', error));
-  });
-  return merged
-}
-
-function pipeWithErrors(...streams) {
-  const piped = streams.reduce((piped, stream) => {
-    return piped.pipe(stream);
-  });
-  streams.slice(0, -1).forEach((stream) => {
-    stream.on('error', (error) => piped.emit('error', error));
-  });
-  return piped;
-}
-
 function submitMetric(name, value) {
   return new Promise((resolve/*, reject*/) => {
     const socket = net.createConnection(2003, "560b32d8.carbon.hostedgraphite.com", () => {
@@ -197,11 +175,10 @@ function submitMetric(name, value) {
 }
 
 gulp.task('lint', () => {
-  const javascript = pipeWithErrors(
-    gulp.src(['src/**/*.js']),
-    eslint(),
-    eslint.format(),
-    eslint.results((results/*, cb */) => {
+  const javascript = gulp.src(['src/**/*.js'])
+    .pipe(eslint())
+    .pipe(eslint.format())
+    .pipe(eslint.results((results/*, cb */) => {
       if (results.errorCount) {
         // If using cb, gulp-eslint throws an exception,
         // rather than just emitting an error, which causes
@@ -210,45 +187,38 @@ gulp.task('lint', () => {
           message: 'Failed linting'
         }));
       }
-    })
-  );
+    }));
 
-  const html = pipeWithErrors(
-    gulp.src(['src/**/*.html']),
-    htmlhint(),
-    htmlhint.failReporter()
-  );
+  const html = gulp.src(['src/**/*.html'])
+    .pipe(htmlhint())
+    .pipe(htmlhint.failReporter());
 
-  return mergeWithErrors(javascript, html);
+  return mergeStream(javascript, html);
 });
 
 gulp.task('test-unit-coverage-setup', () => {
-  return pipeWithErrors(
-    gulp.src(['src/**/*.js', '!src/**/*.spec.js']),
-    istanbul(),
-    istanbul.hookRequire()
-  );
+  return gulp.src(['src/**/*.js', '!src/**/*.spec.js'])
+    .pipe(istanbul())
+    .pipe(istanbul.hookRequire());
 });
 
 gulp.task('test-unit-run', () => {
-  return pipeWithErrors(
-    gulp.src(['src/back/**/*.spec.js', 'src/front/**/*.spec.js'], {read: false}),
-    mocha({
-    }),
-    mocha({
+  return gulp.src(['src/back/**/*.spec.js', 'src/front/**/*.spec.js'], {read: false})
+    .pipe(mocha({
+    }))
+    .pipe(mocha({
       reporter: 'mocha-junit-reporter',
       reporterOptions: {
         mochaFile: RESULTS_DIR + '/unit.xml'
       }
-    }),
-    istanbul.writeReports({
+    }))
+    .pipe(istanbul.writeReports({
       dir: COVERAGE_DIR
-    })
-  );
+    }));
 });
 
 gulp.task('test-unit-coverage-submit-graphana', () => {
-  const coverage = istanbul.summarizeCoverage()
+  const coverage = istanbul.summarizeCoverage();
   return Promise.all([
     submitMetric("test.unit.lines.total", coverage.lines.total),
     submitMetric("test.unit.lines.covered", coverage.lines.covered),
@@ -266,10 +236,8 @@ gulp.task('test-unit-coverage-submit-graphana', () => {
 });
 
 gulp.task('test-unit-coverage-submit-coveralls', () => {
-  return pipeWithErrors(
-    gulp.src(COVERAGE_DIR + '/lcov.info'),
-    coveralls()
-  );
+  return gulp.src(COVERAGE_DIR + '/lcov.info')
+    .pipe(coveralls());
 });
 
 gulp.task('static-analysis-run', (cb) => {
@@ -290,11 +258,9 @@ gulp.task('permit-lambda', () => {
 });
 
 gulp.task('back-deploy', () => {
-  return pipeWithErrors(
-    gulp.src(['src/back/index.js']),
-    zip('index.zip'),
-    streamIfy(updateLambda)
-  );
+  return gulp.src(['src/back/index.js'])
+    .pipe(zip('index.zip'))
+    .pipe(streamIfy(updateLambda))
 });
 
 gulp.task('api-validate', (cb) => {
@@ -323,14 +289,13 @@ gulp.task('api-deploy-certification', () => {
 
     gutil.log('Deploying API as \'' + deployment + '\' with lambda version ' + lambdaVersion);
 
-    return streamToPromise(pipeWithErrors(
-      gulp.src(['src/api/schema.yml']),
-      handlebars({
+    return streamToPromise(gulp.src(['src/api/schema.yml'])
+      .pipe(handlebars({
         deployment: deployment,
         lambdaVersion: lambdaVersion
-      }),
-      streamIfy(apiDeployToCertification)
-    ));
+      }))
+      .pipe(streamIfy(apiDeployToCertification))
+    )
   });
 });
 
@@ -343,33 +308,27 @@ gulp.task('front-clean', () => {
 });
 
 gulp.task('front-build', () => {
-  const scripts = pipeWithErrors(
-    browserify({
+  const scripts = browserify({
       entries: 'src/front/assets/app.js',
       transform: [browserifyShim]
-    }).bundle(),
-    source('assets/app.js'),
-    buffer(),
+    }).bundle()
+    .pipe(source('assets/app.js'))
+    .pipe(buffer())
     // uglify(),
-    rev(),
-    gulp.dest('build'),
-    rev.manifest()
-  );
+    .pipe(rev())
+    .pipe(gulp.dest('build'))
+    .pipe(rev.manifest());
 
-  const files = pipeWithErrors(
-    gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'}),
-    revReplace({manifest: scripts}),
-    gulp.dest('build')
-  );
+  const files = gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'})
+    .pipe(revReplace({manifest: scripts}))
+    .pipe(gulp.dest('build'));
 
-  return mergeWithErrors(scripts, files);
+  return mergeStream(scripts, files);
 });
 
 gulp.task('test-e2e-run', () => {
-  return pipeWithErrors(
-    gulp.src('wdio.conf.js'),
-    webdriver()
-  );
+  return gulp.src('wdio.conf.js')
+    .pipe(webdriver());
 });
 
 gulp.task('front-watch', () => {
@@ -413,13 +372,11 @@ gulp.task('front-assets-deploy-production', () => {
   }
 
   // Cache 1 week
-  const js = pipeWithErrors(
-    gulp.src('assets/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR}),
-    publish({
+  const js = gulp.src('assets/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR})
+    .pipe(publish({
       'Cache-Control': 'max-age=' + 60 * 60 * 24 * 7 + ', public',
       'Content-Type': 'application/javascript; charset=utf-8'
-    })
-  );
+    }));
 
   return js;
 });
@@ -441,18 +398,14 @@ gulp.task('front-html-deploy-certification', () => {
     }
 
     // Cache 1 min
-    const index = pipeWithErrors(
-      gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR}),
-      publish({
+    const index = gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR})
+      .pipe(publish({
         'Cache-Control': 'max-age=' + 60 * 1 + ', public',
         'Content-Type': 'text/html; charset=utf-8'
-      })
-    );
+      }));
 
-    return pipeWithErrors(
-      index,
-      publisher.sync()
-    );
+    return index
+      .pipe(publisher.sync());
   });
 });
 
