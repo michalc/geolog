@@ -58,6 +58,6 @@
   "scripts": {
     "test": "gulp test",
     "deploy": "gulp deploy",
-    "terraform-ensure-installed": "gulp terraform-ensure-installed"
+    "terraform-install": "gulp terraform-install"
   }
 }
