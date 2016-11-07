@@ -2,15 +2,19 @@
 
 const parallelLimit = require('async/parallelLimit');
 const AWS = require('aws-sdk');
-const browserify = require('browserify')
-const browserifyShim = require('browserify-shim')
+const browserify = require('browserify');
+const browserifyShim = require('browserify-shim');
 const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
 const del = require('del');
+const fs = require('fs');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
+const streamToBuffer = require('gulp-buffer');
 const connect = require('gulp-connect');
 const coveralls = require('gulp-coveralls');
+const decompress = require('gulp-decompress');
+const download = require("gulp-download-stream");
 const eslint = require('gulp-eslint');
 const handlebars = require('gulp-compile-handlebars');
 const htmlhint = require("gulp-htmlhint");
@@ -22,6 +26,7 @@ const revReplace = require('gulp-rev-replace');
 const gutil = require('gulp-util');
 const webdriver = require('gulp-webdriver');
 const zip = require('gulp-zip');
+const os = require('os');
 const http = require('http');
 const mergeStream = require('merge-stream')
 const net = require('net');
@@ -426,6 +431,35 @@ gulp.task('front-html-deploy-certification', () => {
 
     return index
       .pipe(publisher.sync());
+  });
+});
+
+function isTerraformInstalled(file) {
+  return new Promise((resolve, reject) => {
+    fs.stat(file, (err, stats) => {
+      resolve(!err && stats.isFile())
+    });
+  });
+}
+
+gulp.task('terraform-ensure-installed', (cb) => {
+  const platform = os.platform();
+  const version = '0.7.9';
+  const file = 'downloads/terraform';
+
+  return isTerraformInstalled(file).then(function(isInstalled) {
+    if (isInstalled) {
+      gutil.log(`Terraform already installed at ${file}`);
+    } else {
+      gutil.log(`Terraform installing to ${file}...`);
+      return streamToPromise(
+        download(`https://releases.hashicorp.com/terraform/${version}/terraform_${version}_${platform}_amd64.zip`)
+          .pipe(streamToBuffer()) // decompress does not support streams
+          .pipe(decompress())
+          .pipe(gulp.dest("downloads/")
+        )
+      ).then(() => gutil.log(`Terraform installed to ${file}`));
+    }
   });
 });
 
