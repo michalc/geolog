@@ -1,4 +1,5 @@
 .DS_Store
+.terraform/
 /bin
 /build
 /coverage
