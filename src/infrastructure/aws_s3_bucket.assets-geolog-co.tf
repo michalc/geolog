@@ -1,7 +1,3 @@
-provider "aws" {
-  region = "eu-west-1"
-}
-
 resource "aws_s3_bucket" "assets-geolog-co" {
   bucket = "assets.geolog.co"
   acl = "public-read"
@@ -29,5 +25,17 @@ data "aws_iam_policy_document" "assets-geolog-co" {
     resources = [
       "arn:aws:s3:::${aws_s3_bucket.assets-geolog-co.bucket}/*"
     ]
+  }
+}
+
+resource "aws_route53_record" "assets-geolog-co" {
+  zone_id = "${aws_route53_zone.geolog-co.zone_id}"
+  name = "assets.geolog.co."
+  type = "A"
+
+  alias {
+    zone_id = "${aws_s3_bucket.assets-geolog-co.hosted_zone_id}"
+    name = "${aws_s3_bucket.assets-geolog-co.website_domain}"
+    evaluate_target_health = false
   }
 }
