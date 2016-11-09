@@ -60,6 +60,10 @@ const COVERAGE_DIR = RESULTS_DIR + '/coverage'
 
 const HOSTED_GRAPHITE_API_KEY = process.env.HOSTED_GRAPHITE_API_KEY;
 
+const TERRAFORM_DIR = 'bin'
+const TERRAFORM = 'bin/terraform';
+
+const FIRST_DEPLOYMENT = 'blue';
 const NEXT_DEPLOYMENTS = {
   'blue': 'green',
   'green': 'blue',
@@ -70,6 +74,14 @@ const BUCKETS = {
   'blue': 'blue.geolog.co',
   'green': 'green.geolog.co'
 };
+
+function getApiGatewayId() {
+  return new Promise((resolve, reject) => {
+    exec(TERRAFORM + ' output aws_api_gateway_rest_api.geolog.id', (err, stdout) => {
+      resolve(stdout.trim());
+    });
+  });
+}
 
 function updateLambda(zippedCode) {
   gutil.log('Updating lambda');
@@ -91,15 +103,22 @@ function updateLambda(zippedCode) {
 // but it has the benefit of getting it from the actual
 // deployment as AWS sees it (not via Cloud Front), and so
 function getCurrentDeployment() {
-  return apigateway.getExport({
-    restApiId: API_GATEWAY_ID,
-    stageName: API_GATEWAY_STAGE_PRODUCTION,
-    exportType: 'swagger',
-    accepts: 'application/json',
-    parameters: {extensions: 'integrations,authorizers'}
-  }).promise().then((result) => {
+  return getApiGatewayId().then((apiGatewayId) => {
+    return apigateway.getExport({
+      restApiId: apiGatewayId,
+      stageName: API_GATEWAY_STAGE_PRODUCTION,
+      exportType: 'swagger',
+      accepts: 'application/json',
+      parameters: {extensions: 'integrations,authorizers'}
+    }).promise();
+  }).then((result) => {
     const swagger = JSON.parse(result.body);
-    const deploymentResponse = swagger.paths['/_deployment'].get['x-amazon-apigateway-integration'].responses.default.responseTemplates['application/json'];
+    const responses = swagger.paths['/_deployment'].get['x-amazon-apigateway-integration'].responses;
+    if (!responses) {
+      // Slightly annoying first-time case when there is no deployment
+      return null
+    }
+    const deploymentResponse = responses.default.responseTemplates['application/json'];
     const deployment = JSON.parse(deploymentResponse).deployment;
     return deployment;
   });
@@ -107,18 +126,20 @@ function getCurrentDeployment() {
 
 function getNextDeployment() {
   return getCurrentDeployment().then((deployment) => {
-    return NEXT_DEPLOYMENTS[deployment];
+    return deployment ? NEXT_DEPLOYMENTS[deployment] : FIRST_DEPLOYMENT;
   });
 }
 
 function apiDeployToCertification(schema) {
   gutil.log('Deploying API to certification');
-  return apigateway.putRestApi({
-    body: schema,
-    restApiId: API_GATEWAY_ID,
-    mode: 'overwrite',
-    failOnWarnings: true
-  }).promise().then(() => {
+  return getApiGatewayId().then((apiGatewayId) => {
+    return apigateway.putRestApi({
+      body: schema,
+      restApiId: apiGatewayId,
+      mode: 'overwrite',
+      failOnWarnings: true
+    }).promise();
+  }).then(() => {
     return apigateway.createDeployment({
       restApiId: API_GATEWAY_ID,
       stageName: API_GATEWAY_STAGE_CERTIFICATION,
@@ -436,16 +457,21 @@ gulp.task('front-html-deploy-certification', () => {
 gulp.task('terraform-install', () => {
   const platform = os.platform();
   const version = '0.7.9';
-  const file = 'bin/terraform';
 
-  gutil.log(`Terraform installing to ${file}...`);
+  gutil.log(`Terraform installing to ${TERRAFORM}...`);
   return streamToPromise(
     download(`https://releases.hashicorp.com/terraform/${version}/terraform_${version}_${platform}_amd64.zip`)
       .pipe(streamToBuffer()) // decompress does not support streams
       .pipe(decompress())
-      .pipe(gulp.dest("bin/")
+      .pipe(gulp.dest(TERRAFORM_DIR)
     )
-  ).then(() => gutil.log(`Terraform installed to ${file}`));
+  ).then(() => gutil.log(`Terraform installed to ${TERRAFORM}`));
+});
+
+gulp.task('terraform-init', (cb) => {
+  exec(TERRAFORM + ' remote config -backend=S3 -backend-config="bucket=geolog-state-production" -backend-config="key=geolog.tfstate" -backend-config="region=eu-west-1"', (err) => {
+    cb(err);
+  });
 });
 
 gulp.task('test', gulp.parallel(
@@ -467,6 +493,9 @@ gulp.task('test', gulp.parallel(
 ));
 
 gulp.task('deploy', gulp.series(
+  // Need IDs of resources to deploy to
+  'terraform-install',
+  'terraform-init',
   gulp.parallel(
     gulp.series(
       'front-clean',
