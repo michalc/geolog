@@ -45,7 +45,6 @@ const LAMBDA_NAME = 'geolog-api';
 // The certification alias is for debugging
 const LAMBDA_ALIAS_CERTIFICATION = 'certification';
 const BUILD_DIR = 'build';
-const API_GATEWAY_ID = '1jxogzz6a3';
 const API_GATEWAY_STAGE_CERTIFICATION = 'certification';
 const API_GATEWAY_STAGE_PRODUCTION = 'production';
 
@@ -138,32 +137,34 @@ function apiDeployToCertification(schema) {
       restApiId: apiGatewayId,
       mode: 'overwrite',
       failOnWarnings: true
-    }).promise();
-  }).then(() => {
-    return apigateway.createDeployment({
-      restApiId: API_GATEWAY_ID,
-      stageName: API_GATEWAY_STAGE_CERTIFICATION,
-    }).promise();
+    }).promise().then(() => {
+      return apigateway.createDeployment({
+        restApiId: apiGatewayId,
+        stageName: API_GATEWAY_STAGE_CERTIFICATION,
+      }).promise();
+    });
   }).then((res) => {
     gutil.log('Deployed to certification: ' + res.id);
   });
 }
 
 function apiDeployToProduction() {
-  return apigateway.getStage({
-    restApiId: API_GATEWAY_ID,
-    stageName: API_GATEWAY_STAGE_CERTIFICATION,
-  }).promise().then((certificationStage) => {
-    gutil.log('Deploying to production: ' + certificationStage.deploymentId)
-    return apigateway.updateStage({
-      restApiId: API_GATEWAY_ID,
-      stageName: API_GATEWAY_STAGE_PRODUCTION,
-      patchOperations: [{
-        op: 'replace',
-        path: '/deploymentId',
-        value: certificationStage.deploymentId
-      }]
-    }).promise();
+  return getApiGatewayId().then((apiGatewayId) => {
+    return apigateway.getStage({
+      restApiId: apiGatewayId,
+      stageName: API_GATEWAY_STAGE_CERTIFICATION,
+    }).promise().then((certificationStage) => {
+      gutil.log('Deploying to production: ' + certificationStage.deploymentId)
+      return apigateway.updateStage({
+        restApiId: apiGatewayId,
+        stageName: API_GATEWAY_STAGE_PRODUCTION,
+        patchOperations: [{
+          op: 'replace',
+          path: '/deploymentId',
+          value: certificationStage.deploymentId
+        }]
+      }).promise();
+    });
   });
 }
 
