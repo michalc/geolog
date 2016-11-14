@@ -2,6 +2,7 @@
 .terraform/
 /bin
 /build
+/certificates
 /coverage
 /node_modules
 /npm-debug.log
