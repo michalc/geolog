@@ -39,3 +39,15 @@ resource "aws_route53_record" "certification_geolog_co" {
     evaluate_target_health = false
   }
 }
+
+resource "aws_api_gateway_base_path_mapping" "geolog_certification" {
+  api_id = "${aws_api_gateway_rest_api.geolog.id}"
+  stage_name = "${aws_api_gateway_deployment.geolog_deployment_certification.stage_name}"
+  domain_name = "${aws_api_gateway_domain_name.certification_geolog_co.domain_name}"
+}
+
+resource "aws_api_gateway_base_path_mapping" "geolog_production" {
+  api_id = "${aws_api_gateway_rest_api.geolog.id}"
+  stage_name = "${aws_api_gateway_deployment.geolog_deployment_production.stage_name}"
+  domain_name = "${aws_api_gateway_domain_name.geolog_co.domain_name}"
+}

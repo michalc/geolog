@@ -47,6 +47,8 @@ resource "aws_api_gateway_integration" "geolog_deployment_GET" {
   }
 }
 
+# Permissions
+
 resource "aws_iam_policy" "geolog_s3_blue_green_get" {
   name = "geolog_s3_blue_green_get"
   policy = "${data.aws_iam_policy_document.geolog_blue_green_s3_get.json}"
