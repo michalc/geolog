@@ -46,3 +46,46 @@ resource "aws_api_gateway_integration" "geolog_deployment_GET" {
     ]
   }
 }
+
+resource "aws_iam_policy" "geolog_s3_blue_green_get" {
+  name = "geolog_s3_blue_green_get"
+  policy = "${data.aws_iam_policy_document.geolog_blue_green_s3_get.json}"
+}
+
+resource "aws_iam_role_policy_attachment" "geolog_s3_blue_green_get" {
+  role = "${aws_iam_role.apigateway_s3_blue_green_get.name}"
+  policy_arn = "${aws_iam_policy.geolog_s3_blue_green_get.arn}"
+}
+
+resource "aws_iam_role" "apigateway_s3_blue_green_get" {
+  name = "apigateway_s3_blue_green_get"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "apigateway.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+data "aws_iam_policy_document" "geolog_blue_green_s3_get" {
+  statement {
+    sid = "AddPerm"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject"
+    ]
+    resources = [
+      "arn:aws:s3:::blue.geolog.co/*",
+      "arn:aws:s3:::green.geolog.co/*"
+    ]
+  }
+}
