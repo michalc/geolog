@@ -34,8 +34,8 @@ resource "aws_route53_record" "assets-geolog-co" {
   type = "A"
 
   alias {
-    zone_id = "${aws_s3_bucket.assets-geolog-co.hosted_zone_id}"
-    name = "${aws_s3_bucket.assets-geolog-co.website_domain}"
+    zone_id = "${aws_cloudfront_distribution.assets-geolog-co.hosted_zone_id}"
+    name = "${aws_cloudfront_distribution.assets-geolog-co.domain_name}"
     evaluate_target_health = false
   }
 }
