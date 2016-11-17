@@ -79,6 +79,11 @@ resource "aws_cloudfront_distribution" "assets-geolog-co" {
   price_class = "PriceClass_All"
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    ssl_support_method = "sni-only"
+    minimum_protocol_version = "TLSv1"
+
+    # Must be manually setup, and aws_acm_certificate data
+    # causes a crash of Terraform. Gah!
+    acm_certificate_arn = "arn:aws:acm:us-east-1:772663561820:certificate/24f883f9-200f-49cb-8af4-6dff4af36997"
   }
 }
