@@ -75,7 +75,7 @@ const BUCKETS = {
 };
 
 function getApiGatewayId() {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     exec(TERRAFORM + ' output aws_api_gateway_rest_api.geolog.id', (err, stdout) => {
       resolve(stdout.trim());
     });
