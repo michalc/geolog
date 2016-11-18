@@ -21,3 +21,7 @@
 ## Terraform
 
 - Configuration as code. Want everything to do with the site in the codebase. There is no distinction between Dev and Ops!
+
+## Cognito
+
+- Handling logins is a boring pain!
