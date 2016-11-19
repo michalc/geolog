@@ -6,7 +6,7 @@ resource "aws_lambda_function" "geolog_api" {
 }
 
 resource "aws_iam_role" "geolog_lambda" {
-    name = "iam_for_lambda"
+    name = "geolog_lambda"
     assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",

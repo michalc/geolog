@@ -54,13 +54,23 @@ resource "aws_iam_policy" "geolog_s3_blue_green_get" {
   policy = "${data.aws_iam_policy_document.geolog_blue_green_s3_get.json}"
 }
 
-resource "aws_iam_role_policy_attachment" "geolog_s3_blue_green_get" {
-  role = "${aws_iam_role.apigateway_s3_blue_green_get.name}"
+resource "aws_iam_role_policy_attachment" "geolog_apigateway_s3_blue_green_get" {
+  role = "${aws_iam_role.geolog_apigateway.name}"
   policy_arn = "${aws_iam_policy.geolog_s3_blue_green_get.arn}"
 }
 
-resource "aws_iam_role" "apigateway_s3_blue_green_get" {
-  name = "apigateway_s3_blue_green_get"
+resource "aws_iam_policy" "geolog_invoke_lambda" {
+  name = "geolog_invoke_lambda"
+  policy = "${data.aws_iam_policy_document.geolog_invoke_lambda.json}"
+}
+
+resource "aws_iam_role_policy_attachment" "geolog_apigateway_invoke_lambda" {
+  role = "${aws_iam_role.geolog_apigateway.name}"
+  policy_arn = "${aws_iam_policy.geolog_invoke_lambda.arn}"
+}
+
+resource "aws_iam_role" "geolog_apigateway" {
+  name = "geolog_apigateway"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -71,7 +81,8 @@ resource "aws_iam_role" "apigateway_s3_blue_green_get" {
         "Service": "apigateway.amazonaws.com"
       },
       "Effect": "Allow",
-      "Sid": ""
+      "Sid": "",
+      "SourceArn": "arn:aws:execute-api:*:*:${aws_api_gateway_rest_api.geolog.id}/*"
     }
   ]
 }
@@ -80,7 +91,19 @@ EOF
 
 data "aws_iam_policy_document" "geolog_blue_green_s3_get" {
   statement {
-    sid = "AddPerm"
+    sid = "ListBucket"
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::blue.geolog.co",
+      "arn:aws:s3:::green.geolog.co",
+    ]
+  }
+
+  statement {
+    sid = "GetObject"
     effect = "Allow"
     actions = [
       "s3:GetObject"
@@ -90,4 +113,25 @@ data "aws_iam_policy_document" "geolog_blue_green_s3_get" {
       "arn:aws:s3:::green.geolog.co/*"
     ]
   }
+}
+
+data "aws_iam_policy_document" "geolog_invoke_lambda" {
+  statement {
+    sid = "AddPerm"
+    effect = "Allow"
+    actions = [
+      "lambda:InvokeFunction"
+    ]
+    resources = [
+      "${aws_lambda_function.geolog_api.arn}",
+    ]
+  }
+}
+
+resource "aws_lambda_permission" "geolog_invoke_lambda" {
+  statement_id = "geolog_invoke_lambda"
+  action = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.geolog_api.arn}"
+  principal = "apigateway.amazonaws.com"
+  source_arn = "arn:aws:execute-api:eu-west-1:772663561820:${aws_api_gateway_rest_api.geolog.id}/*/GET/*"
 }

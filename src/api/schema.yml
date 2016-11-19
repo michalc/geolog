@@ -63,7 +63,7 @@ paths:
         uri: arn:aws:apigateway:eu-west-1:s3:path/{{ deployment }}.geolog.co/index.html
         passthroughBehavior: "when_no_match"
         httpMethod: "GET"
-        credentials: arn:aws:iam::772663561820:role/geolog-api-gateway-s3-get-object
+        credentials: arn:aws:iam::772663561820:role/geolog_apigateway
         responses:    
           200:
             statusCode: "200"
