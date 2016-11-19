@@ -1,4 +1,6 @@
-# Can't actually setup cognito, but can setup permissions
+# Can't actually setup cognito, but can setup permissions / roles
+# After pool is created, must select the authenticated and
+# unauthenticaed roles manually in the console
 
 # Are this minimum set of permissions for cognito to do stuff?
 data "aws_iam_policy_document" "geolog_cognito_minimum" {
