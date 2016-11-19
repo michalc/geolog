@@ -65,6 +65,32 @@ resource "aws_iam_role" "geolog_cognito_unauthenticated" {
 EOF
 }
 
+resource "aws_iam_role" "geolog_cognito_authenticated" {
+    name = "geolog_cognito_authenticated"
+    assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "cognito-identity.amazonaws.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "cognito-identity.amazonaws.com:aud": "eu-west-1:fdeb8cdc-38e2-4963-9578-5a4f03efdfed"
+        },
+        "ForAnyValue:StringLike": {
+          "cognito-identity.amazonaws.com:amr": "authenticated"
+        }
+      }
+    }
+  ]
+}
+EOF
+}
+
 resource "aws_iam_role_policy_attachment" "geolog_invoke_api_gateway" {
   role = "${aws_iam_role.geolog_cognito_unauthenticated.name}"
   policy_arn = "${aws_iam_policy.geolog_invoke_api_gateway.arn}"
