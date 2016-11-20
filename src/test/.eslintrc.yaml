@@ -4,3 +4,5 @@ env:
 globals:
   # webdriver.io
   browser: true
+  # chai
+  expect: true

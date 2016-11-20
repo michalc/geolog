@@ -219,16 +219,17 @@ function submitMetrics(data, callback) {
   parallelLimit(funcs, 16, callback)
 }
 
-gulp.task('lint', () => {
-  const javascript = gulp.src(['src/**/*.js'])
+gulp.task('lint-javascript', () => {
+  return gulp.src(['src/**/*.js'])
     .pipe(eslint())
-    .pipe(eslint.format());
+    .pipe(eslint.format())
+    .pipe(eslint.failAfterError());
+});
 
-  const html = gulp.src(['src/**/*.html'])
+gulp.task('lint-html', () => {
+  return gulp.src(['src/**/*.html'])
     .pipe(htmlhint())
     .pipe(htmlhint.failReporter());
-
-  return mergeStream(javascript, html);
 });
 
 gulp.task('test-unit-coverage-setup', () => {
@@ -411,22 +412,21 @@ gulp.task('front-build-production', () => {
 });
 
 function serveFront() {
-  const siteServer = connect.server({
+  connect.server({
     root: siteBuildDir('development'),
     port: DEVELOPMENT_SITE_PORT
   });
-  const assetsServer = connect.server({
+  connect.server({
     root: assetsBuildDir('development'),
     port: DEVELOPMENT_ASSETS_PORT
   });
-  return [siteServer, assetsServer];
 }
 
 gulp.task('test-e2e-run-local', () => {
   // There is a race condition here, but
   // starting the server seems to be much
   // quicker than starting the tests
-  const servers = serveFront()
+  serveFront()
 
   return gulp.src('wdio.conf.js')
     .pipe(webdriver({
@@ -551,7 +551,10 @@ gulp.task('develop',
 gulp.task('test', gulp.parallel(
   'api-validate',
   gulp.series(
-    'lint',
+    gulp.parallel(
+      'lint-javascript',
+      'lint-html'
+    ),
     gulp.parallel(
       gulp.series('static-analysis-run', 'static-analysis-submit-graphana'),
       gulp.series(
