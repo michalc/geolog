@@ -75,6 +75,15 @@ const BUCKETS = {
   'green': 'green.geolog.co'
 };
 
+const ENVIRONMENTS = {
+  'production': {
+    'assetsBase': 'https://assets.geolog.co'
+  },
+  'development': {
+    'assetsBase': ''
+  }
+}
+
 function getApiGatewayId() {
   return new Promise((resolve) => {
     exec(TERRAFORM + ' output aws_api_gateway_rest_api.geolog.id', (err, stdout) => {
@@ -354,11 +363,11 @@ gulp.task('front-clean', () => {
   return del([BUILD_DIR + '/**', '!' + BUILD_DIR]);
 });
 
-const buildDir = (type) => {
-  return BUILD_DIR + '/' + type
+const buildDir = (environment) => {
+  return BUILD_DIR + '/' + environment
 }
 
-const frontBuild = (type) => {
+const frontBuild = (environment) => {
   const scripts = browserify({
       entries: 'src/front/assets/app.jsx'
     })
@@ -369,12 +378,15 @@ const frontBuild = (type) => {
     .pipe(buffer())
     // uglify(),
     .pipe(rev())
-    .pipe(gulp.dest(buildDir(type)))
+    .pipe(gulp.dest(buildDir(environment)))
     .pipe(rev.manifest());
 
   const files = gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'})
+    .pipe(handlebars({
+      assetBase: ENVIRONMENTS[environment].assetsBase,
+    }))
     .pipe(revReplace({manifest: scripts}))
-    .pipe(gulp.dest(buildDir(type)));
+    .pipe(gulp.dest(buildDir(environment)));
 
   return mergeStream(scripts, files);
 }
