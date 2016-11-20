@@ -75,12 +75,15 @@ const BUCKETS = {
   'green': 'green.geolog.co'
 };
 
+const DEVELOPMENT_SITE_PORT = '8080';
+const DEVELOPMENT_ASSETS_PORT = '8081';
+
 const ENVIRONMENTS = {
   'production': {
     'assetsBase': 'https://assets.geolog.co'
   },
   'development': {
-    'assetsBase': ''
+    'assetsBase': 'http://localhost:' + DEVELOPMENT_ASSETS_PORT
   }
 }
 
@@ -367,6 +370,14 @@ const buildDir = (environment) => {
   return BUILD_DIR + '/' + environment
 }
 
+const siteBuildDir = (environment) => {
+  return buildDir(environment) + '/site'
+}
+
+const assetsBuildDir = (environment) => {
+  return buildDir(environment) + '/assets'
+}
+
 const frontBuild = (environment) => {
   const scripts = browserify({
       entries: 'src/front/assets/app.jsx'
@@ -374,19 +385,19 @@ const frontBuild = (environment) => {
     .transform(babelify, {presets: ["react"]})
     .transform(browserifyShim)
     .bundle()
-    .pipe(source('assets/app.js'))
+    .pipe(source('app.js'))
     .pipe(buffer())
     // uglify(),
     .pipe(rev())
-    .pipe(gulp.dest(buildDir(environment)))
+    .pipe(gulp.dest(assetsBuildDir(environment)))
     .pipe(rev.manifest());
 
-  const files = gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'})
+  const files = gulp.src(['index.html'], {cwd: 'src/front/site', base: 'src/front/site'})
     .pipe(handlebars({
-      assetBase: ENVIRONMENTS[environment].assetsBase,
+      assetsBase: ENVIRONMENTS[environment].assetsBase,
     }))
     .pipe(revReplace({manifest: scripts}))
-    .pipe(gulp.dest(buildDir(environment)));
+    .pipe(gulp.dest(siteBuildDir(environment)));
 
   return mergeStream(scripts, files);
 }
@@ -399,20 +410,31 @@ gulp.task('front-build-production', () => {
   return frontBuild('production')
 });
 
+function serveFront() {
+  const siteServer = connect.server({
+    root: siteBuildDir('development'),
+    port: DEVELOPMENT_SITE_PORT
+  });
+  const assetsServer = connect.server({
+    root: assetsBuildDir('development'),
+    port: DEVELOPMENT_ASSETS_PORT
+  });
+  return [siteServer, assetsServer];
+}
+
 gulp.task('test-e2e-run-local', () => {
   // There is a race condition here, but
   // starting the server seems to be much
   // quicker than starting the tests
-  const server = connect.server({
-    root: buildDir('development'),
-  });
+  const servers = serveFront()
 
   return gulp.src('wdio.conf.js')
     .pipe(webdriver({
       baseUrl: 'http://localhost:8080'
     }))
     .on('finish', () => {
-      connect.serverClose();
+      servers[0].serverClose();
+      servers[1].serverClose();
     });
 });
 
@@ -428,9 +450,7 @@ gulp.task('front-watch', () => {
 });
 
 gulp.task('front-serve', () => {
-  return connect.server({
-    root: buildDir('development')
-  });
+  serveFront()
 });
 
 gulp.task('back-serve', () => {
@@ -464,7 +484,7 @@ gulp.task('front-assets-deploy-production', () => {
   }
 
   // Cache 1 week
-  const js = gulp.src('assets/**/*.js', {cwd: BUILD_DIR, base: BUILD_DIR})
+  const js = gulp.src('**/*.js', {cwd: assetsBuildDir('production'), base: assetsBuildDir('production')})
     .pipe(publish({
       'Cache-Control': 'max-age=' + 60 * 60 * 24 * 7 + ', public',
       'Content-Type': 'application/javascript; charset=utf-8'
