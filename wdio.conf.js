@@ -66,10 +66,6 @@ exports.config = {
   // Saves a screenshot to a given path if a command fails.
   screenshotPath: './errorShots/',
   //
-  // Set a base URL in order to shorten url command calls. If your url parameter starts
-  // with "/", then the base url gets prepended.
-  baseUrl: 'https://certification.geolog.co',
-  //
   // Default timeout for all waitFor* commands.
   waitforTimeout: 10000,
   //

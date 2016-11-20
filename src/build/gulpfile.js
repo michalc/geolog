@@ -375,9 +375,28 @@ gulp.task('front-build', () => {
   return mergeStream(scripts, files);
 });
 
-gulp.task('test-e2e-run', () => {
+gulp.task('test-e2e-run-local', () => {
+  // There is a race condition here, but
+  // starting the server seems to be much
+  // quicker than starting the tests
+  const server = connect.server({
+    root: 'build',
+  });
+
   return gulp.src('wdio.conf.js')
-    .pipe(webdriver());
+    .pipe(webdriver({
+      baseUrl: 'http://localhost:8080'
+    }))
+    .on('finish', () => {
+      connect.serverClose();
+    });
+});
+
+gulp.task('test-e2e-run-certification', () => {
+  return gulp.src('wdio.conf.js')
+    .pipe(webdriver({
+      baseUrl: 'https://certification.geolog.co'
+    }));
 });
 
 gulp.task('front-watch', () => {
@@ -521,7 +540,7 @@ gulp.task('deploy', gulp.series(
       'api-deploy-certification'
     )
   ),
-  'test-e2e-run',
+  'test-e2e-run-certification',
   'api-deploy-to-production'
 ));
 
