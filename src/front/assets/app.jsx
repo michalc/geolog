@@ -3,10 +3,16 @@
 const AWS = require('aws-sdk');
 const Api = require('./api')
 const apigClientFactory = require('./apigClientFactory');
-const api = new Api(AWS, apigClientFactory);
+
+const identityPoolId = 'eu-west-1:fdeb8cdc-38e2-4963-9578-5a4f03efdfed'
+const region = 'eu-west-1';
+const api = new Api(AWS, apigClientFactory, region, identityPoolId);
 
 const React = require('react');
 const ReactDOM = require('react-dom');
+
+// For testing
+api.getJob()
 
 class GeoLog extends React.Component {
 
