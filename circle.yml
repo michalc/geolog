@@ -11,4 +11,4 @@ deployment:
   production:
     branch: master
     commands:
-      - npm run deploy
+      - NODE_ENV=production npm run deploy
