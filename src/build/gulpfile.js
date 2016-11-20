@@ -433,8 +433,7 @@ gulp.task('test-e2e-run-local', () => {
       baseUrl: 'http://localhost:8080'
     }))
     .on('finish', () => {
-      servers[0].serverClose();
-      servers[1].serverClose();
+      connect.serverClose()
     });
 });
 
