@@ -43,7 +43,7 @@ class GeoLog extends React.Component {
   handleFileSelect(e) {
     this.setState(prevState => {
       return {
-        files: [e]
+        files: prevState.files.concat([e])
       }
     });
   }
