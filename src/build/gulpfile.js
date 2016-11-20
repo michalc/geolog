@@ -53,7 +53,7 @@ const API_GATEWAY_STAGE_PRODUCTION = 'production';
 // way of getting this is the way to get options into the
 // AWS SDK builder
 process.env.MINIFY = '1'
-process.env.AWS_SERVICES ='cognitoidentity'
+process.env.AWS_SERVICES ='cognitoidentity,s3'
 
 const RESULTS_DIR = (process.env.CIRCLECI ? process.env.CIRCLE_TEST_REPORTS + '/' : '') + 'results'
 const COVERAGE_DIR = RESULTS_DIR + '/coverage'

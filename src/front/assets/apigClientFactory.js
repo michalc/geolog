@@ -1,6 +1,4 @@
-/* eslint-env browser */
-
-'use strict'
+'use strict';
 
 const apiGateway = require('api-gateway');
 const uritemplate = require('uritemplate');
