@@ -26,3 +26,22 @@ creds.get(() => {
 
   });
 });
+
+var React = require('react');
+var ReactDOM = require('react-dom');
+
+var GeoLog = React.createClass({
+  displayName: 'ReputationBox',
+  render: function() {
+    return (
+      <p>GeoLog</p>
+    );
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  ReactDOM.render(
+    React.createElement(GeoLog, null),
+    document.getElementById('geolog')
+  );
+});

@@ -2,6 +2,7 @@
 
 const parallelLimit = require('async/parallelLimit');
 const AWS = require('aws-sdk');
+const babelify = require("babelify");
 const browserify = require('browserify');
 const browserifyShim = require('browserify-shim');
 const childProcess = require('child_process');
@@ -355,9 +356,11 @@ gulp.task('front-clean', () => {
 
 gulp.task('front-build', () => {
   const scripts = browserify({
-      entries: 'src/front/assets/app.js',
-      transform: [browserifyShim]
-    }).bundle()
+      entries: 'src/front/assets/app.jsx'
+    })
+    .transform(babelify, {presets: ["react"]})
+    .transform(browserifyShim)
+    .bundle()
     .pipe(source('assets/app.js'))
     .pipe(buffer())
     // uglify(),
