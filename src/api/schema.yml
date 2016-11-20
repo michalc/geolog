@@ -82,7 +82,7 @@ paths:
     post:
       x-amazon-apigateway-integration:
         type: aws_proxy
-        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog-api{{ lambdaVersion }}/invocations
+        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog-api/invocations
         httpMethod: POST
       security:
       - sigv4: []
@@ -141,7 +141,7 @@ paths:
     get:
       x-amazon-apigateway-integration:
         type: aws_proxy
-        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog-api{{ lambdaVersion }}/invocations
+        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog-api/invocations
         httpMethod: POST
       security:
       - sigv4: []
@@ -213,7 +213,7 @@ paths:
     get:
       x-amazon-apigateway-integration:
         type: aws_proxy
-        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog-api{{ lambdaVersion }}/invocations
+        uri: arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:772663561820:function:geolog-api/invocations
         httpMethod: POST
       security:
       - sigv4: []
