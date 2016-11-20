@@ -30,18 +30,18 @@ creds.get(() => {
 var React = require('react');
 var ReactDOM = require('react-dom');
 
-var GeoLog = React.createClass({
-  displayName: 'ReputationBox',
-  render: function() {
+class GeoLog extends React.Component {
+  render() {
     return (
       <p>GeoLog</p>
     );
   }
-});
+}
 
-document.addEventListener('DOMContentLoaded', function() {
-  ReactDOM.render(
-    React.createElement(GeoLog, null),
+document.addEventListener('DOMContentLoaded', () => {
+  ReactDOM.render((
+      <GeoLog />
+    ),
     document.getElementById('geolog')
   );
 });
