@@ -445,7 +445,7 @@ gulp.task('test-e2e-run-certification', () => {
 });
 
 gulp.task('front-watch', () => {
-  gulp.watch(['package.json', 'src/**/*'], gulp.series('front-development'));
+  gulp.watch(['package.json', 'src/**/*'], gulp.series('front-build-development'));
 });
 
 gulp.task('front-serve', () => {
@@ -542,6 +542,7 @@ gulp.task('terraform-init', (cb) => {
 
 gulp.task('develop', 
   gulp.parallel(
+    'front-build-development',
     'front-serve',
     'front-watch'
   )
