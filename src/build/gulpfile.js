@@ -378,7 +378,7 @@ gulp.task('test-e2e-run', () => {
 });
 
 gulp.task('front-watch', () => {
-  gulp.watch(['package.json', 'src/**/*'], ['front-build']);
+  gulp.watch(['package.json', 'src/**/*'], gulp.series('front-build'));
 });
 
 gulp.task('front-serve', () => {
@@ -474,6 +474,13 @@ gulp.task('terraform-init', (cb) => {
     cb(err);
   });
 });
+
+gulp.task('develop', 
+  gulp.parallel(
+    'front-serve',
+    'front-watch'
+  )
+)
 
 gulp.task('test', gulp.parallel(
   'api-validate',
