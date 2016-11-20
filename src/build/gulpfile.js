@@ -351,10 +351,14 @@ gulp.task('api-deploy-to-production', () => {
 });
 
 gulp.task('front-clean', () => {
-  return del(['build/**', '!build']);
+  return del([BUILD_DIR + '/**', '!' + BUILD_DIR]);
 });
 
-gulp.task('front-build', () => {
+const buildDir = (type) => {
+  return BUILD_DIR + '/' + type
+}
+
+const frontBuild = (type) => {
   const scripts = browserify({
       entries: 'src/front/assets/app.jsx'
     })
@@ -365,14 +369,22 @@ gulp.task('front-build', () => {
     .pipe(buffer())
     // uglify(),
     .pipe(rev())
-    .pipe(gulp.dest('build'))
+    .pipe(gulp.dest(buildDir(type)))
     .pipe(rev.manifest());
 
   const files = gulp.src(['index.html'], {cwd: 'src/front', base: 'src/front'})
     .pipe(revReplace({manifest: scripts}))
-    .pipe(gulp.dest('build'));
+    .pipe(gulp.dest(buildDir(type)));
 
   return mergeStream(scripts, files);
+}
+
+gulp.task('front-build-development', () => {
+  return frontBuild('development')
+});
+
+gulp.task('front-build-production', () => {
+  return frontBuild('production')
 });
 
 gulp.task('test-e2e-run-local', () => {
@@ -380,7 +392,7 @@ gulp.task('test-e2e-run-local', () => {
   // starting the server seems to be much
   // quicker than starting the tests
   const server = connect.server({
-    root: 'build',
+    root: buildDir('development'),
   });
 
   return gulp.src('wdio.conf.js')
@@ -400,12 +412,12 @@ gulp.task('test-e2e-run-certification', () => {
 });
 
 gulp.task('front-watch', () => {
-  gulp.watch(['package.json', 'src/**/*'], gulp.series('front-build'));
+  gulp.watch(['package.json', 'src/**/*'], gulp.series('front-development'));
 });
 
 gulp.task('front-serve', () => {
   return connect.server({
-    root: 'build'
+    root: buildDir('development')
   });
 });
 
@@ -466,7 +478,7 @@ gulp.task('front-html-deploy-certification', () => {
     }
 
     // Cache 1 min
-    const index = gulp.src('index.html', {cwd: BUILD_DIR, base: BUILD_DIR})
+    const index = gulp.src('index.html', {cwd: buildDir('production'), base: buildDir('production')})
       .pipe(publish({
         'Cache-Control': 'max-age=' + 60 * 1 + ', public',
         'Content-Type': 'text/html; charset=utf-8'
@@ -529,7 +541,7 @@ gulp.task('deploy', gulp.series(
   gulp.parallel(
     gulp.series(
       'front-clean',
-      'front-build',
+      'front-build-production',
       gulp.parallel(
         'front-assets-deploy-production',
         'front-html-deploy-certification'
