@@ -30,6 +30,7 @@ const zip = require('gulp-zip');
 const handlebars = require('handlebars');
 const os = require('os');
 const http = require('http');
+const mergeStream = require('merge-stream');
 const net = require('net');
 const stream = require('stream');
 const buffer = require('vinyl-buffer');
@@ -392,8 +393,8 @@ const assetsBuildDir = (environment) => {
 }
 
 const frontBuild = (environment) => {
-  const scripts = getUploadBucket().then((uploadBucket) => {
-    const scriptsStream = browserify({
+  return getUploadBucket().then((uploadBucket) => {
+    const scripts = browserify({
         entries: 'src/front/assets/app.jsx'
       })
       .transform(transformTools.makeStringTransform("template", {
@@ -417,17 +418,15 @@ const frontBuild = (environment) => {
       .pipe(gulp.dest(assetsBuildDir(environment)))
       .pipe(rev.manifest());
 
-    return streamToPromise(scriptsStream);
+    const files = gulp.src(['index.html'], {cwd: 'src/front/site', base: 'src/front/site'})
+      .pipe(gulpHandlebars({
+        assetsBase: ENVIRONMENTS[environment].assetsBase,
+      }))
+      .pipe(revReplace({manifest: scripts}))
+      .pipe(gulp.dest(siteBuildDir(environment)));
+
+    return streamToPromise(mergeStream(scripts, files));
   });
-
-  const filesStream = gulp.src(['index.html'], {cwd: 'src/front/site', base: 'src/front/site'})
-    .pipe(gulpHandlebars({
-      assetsBase: ENVIRONMENTS[environment].assetsBase,
-    }))
-    .pipe(revReplace({manifest: scripts}))
-    .pipe(gulp.dest(siteBuildDir(environment)));
-
-  return Promise.all([scripts, streamToPromise(filesStream)]);
 }
 
 gulp.task('front-build-development', () => {
