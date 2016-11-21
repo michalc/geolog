@@ -5,9 +5,11 @@ class Api {
     AWS,
     apigClientFactory,
     region,
-    identityPoolId,
+    identityPoolId
   ) {
-    const creds = new AWS.CognitoIdentityCredentials({
+    this.AWS = AWS;
+
+    const creds = new this.AWS.CognitoIdentityCredentials({
       IdentityPoolId: identityPoolId
     });
 
@@ -34,6 +36,9 @@ class Api {
     this.apigClient.then((client) => {
       return client.apiJobsIdGet({id:1});
     });
+  }
+
+  upload() {
   }
 }
 

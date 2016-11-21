@@ -1,3 +1,7 @@
+output "aws_s3_bucket.uploads_geolog_co.arn" {
+  value = "${aws_s3_bucket.uploads_geolog_co.arn}"
+}
+
 resource "aws_s3_bucket" "uploads_geolog_co" {
   bucket = "uploads.geolog.co"
 

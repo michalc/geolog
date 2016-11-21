@@ -4,9 +4,8 @@ const AWS = require('aws-sdk');
 const Api = require('./api')
 const apigClientFactory = require('./apigClientFactory');
 
-const identityPoolId = 'eu-west-1:fdeb8cdc-38e2-4963-9578-5a4f03efdfed'
-const region = 'eu-west-1';
-const api = new Api(AWS, apigClientFactory, region, identityPoolId);
+const config = require('./config');
+const api = new Api(AWS, apigClientFactory, config.region, config.identityPoolId);
 
 const React = require('react');
 const ReactDOM = require('react-dom');

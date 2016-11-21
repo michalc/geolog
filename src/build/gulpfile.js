@@ -4,6 +4,7 @@ const parallelLimit = require('async/parallelLimit');
 const AWS = require('aws-sdk');
 const babelify = require("babelify");
 const browserify = require('browserify');
+const transformTools = require('browserify-transform-tools');
 const browserifyShim = require('browserify-shim');
 const childProcess = require('child_process');
 const concurrent = require('concurrent-transform');
@@ -16,7 +17,7 @@ const coveralls = require('gulp-coveralls');
 const decompress = require('gulp-decompress');
 const download = require("gulp-download-stream");
 const eslint = require('gulp-eslint');
-const handlebars = require('gulp-compile-handlebars');
+const gulpHandlebars = require('gulp-compile-handlebars');
 const htmlhint = require("gulp-htmlhint");
 const istanbul = require('gulp-istanbul');
 const mocha = require('gulp-mocha');
@@ -26,9 +27,9 @@ const revReplace = require('gulp-rev-replace');
 const gutil = require('gulp-util');
 const webdriver = require('gulp-webdriver');
 const zip = require('gulp-zip');
+const handlebars = require('handlebars');
 const os = require('os');
 const http = require('http');
-const mergeStream = require('merge-stream')
 const net = require('net');
 const stream = require('stream');
 const buffer = require('vinyl-buffer');
@@ -87,12 +88,23 @@ const ENVIRONMENTS = {
   }
 }
 
-function getApiGatewayId() {
+const IDENTITY_POOL_ID = 'eu-west-1:fdeb8cdc-38e2-4963-9578-5a4f03efdfed';
+const REGION = 'eu-west-1';
+
+function getTerraformOutput(name) {
   return new Promise((resolve) => {
-    exec(TERRAFORM + ' output aws_api_gateway_rest_api.geolog.id', (err, stdout) => {
+    exec(TERRAFORM + ' output ' + name, (err, stdout) => {
       resolve(stdout.trim());
     });
-  });
+  }); 
+}
+
+function getApiGatewayId() {
+  return getTerraformOutput('aws_api_gateway_rest_api.geolog.id');
+}
+
+function getUploadBucket() {
+  return getTerraformOutput('aws_s3_bucket.uploads_geolog_co.arn');
 }
 
 function updateLambda(zippedCode) {
@@ -350,7 +362,7 @@ gulp.task('api-deploy-certification', () => {
     gutil.log('Deploying API as \'' + deployment + '\' with lambda version ' + lambdaVersion);
 
     return streamToPromise(gulp.src(['src/api/schema.yml'])
-      .pipe(handlebars({
+      .pipe(gulpHandlebars({
         deployment: deployment,
         lambdaVersion: lambdaVersion
       }))
@@ -380,27 +392,42 @@ const assetsBuildDir = (environment) => {
 }
 
 const frontBuild = (environment) => {
-  const scripts = browserify({
-      entries: 'src/front/assets/app.jsx'
-    })
-    .transform(babelify, {presets: ["react"]})
-    .transform(browserifyShim)
-    .bundle()
-    .pipe(source('app.js'))
-    .pipe(buffer())
-    // uglify(),
-    .pipe(rev())
-    .pipe(gulp.dest(assetsBuildDir(environment)))
-    .pipe(rev.manifest());
+  const scripts = getUploadBucket().then((uploadBucket) => {
+    const scriptsStream = browserify({
+        entries: 'src/front/assets/app.jsx'
+      })
+      .transform(transformTools.makeStringTransform("template", {
+        includeExtensions: ['config.js']
+      }, (content, transformOptions, done) => {
+        const template = handlebars.compile(content);
+        const data = {
+          identityPoolId: IDENTITY_POOL_ID,
+          region: REGION,
+          uploadBucket: uploadBucket
+        };
+        done(null, template(data));
+      }))
+      .transform(babelify, {presets: ["react"]})
+      .transform(browserifyShim)
+      .bundle()
+      .pipe(source('app.js'))
+      .pipe(buffer())
+      // uglify(),
+      .pipe(rev())
+      .pipe(gulp.dest(assetsBuildDir(environment)))
+      .pipe(rev.manifest());
 
-  const files = gulp.src(['index.html'], {cwd: 'src/front/site', base: 'src/front/site'})
-    .pipe(handlebars({
+    return streamToPromise(scriptsStream);
+  });
+
+  const filesStream = gulp.src(['index.html'], {cwd: 'src/front/site', base: 'src/front/site'})
+    .pipe(gulpHandlebars({
       assetsBase: ENVIRONMENTS[environment].assetsBase,
     }))
     .pipe(revReplace({manifest: scripts}))
     .pipe(gulp.dest(siteBuildDir(environment)));
 
-  return mergeStream(scripts, files);
+  return Promise.all([scripts, streamToPromise(filesStream)]);
 }
 
 gulp.task('front-build-development', () => {
