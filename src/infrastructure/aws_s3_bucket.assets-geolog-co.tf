@@ -55,6 +55,7 @@ resource "aws_cloudfront_distribution" "assets-geolog-co" {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "assets.geolog.co"
+    compress = true
 
     forwarded_values {
       query_string = false
