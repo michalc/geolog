@@ -105,7 +105,7 @@ function getApiGatewayId() {
 }
 
 function getUploadBucket() {
-  return getTerraformOutput('aws_s3_bucket.uploads_geolog_co.arn');
+  return getTerraformOutput('aws_s3_bucket.uploads_geolog_co.id');
 }
 
 function updateLambda(zippedCode) {

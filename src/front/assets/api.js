@@ -5,9 +5,11 @@ class Api {
     AWS,
     apigClientFactory,
     region,
-    identityPoolId
+    identityPoolId,
+    uploadBucket,
   ) {
     this.AWS = AWS;
+    this.uploadBucket = uploadBucket;
 
     const creds = new this.AWS.CognitoIdentityCredentials({
       IdentityPoolId: identityPoolId
@@ -38,7 +40,19 @@ class Api {
     });
   }
 
-  upload() {
+  upload(file) {
+    this.creds.then((credentials) => {
+      const s3 = new AWS.S3({
+        credentials: credentials
+      });
+      s3.putObject({
+        Bucket: this.uploadBucket,
+        Key: 'some-key',
+        Body: file
+      }).promise().then(() => {
+      }, () => {
+      });  
+    })
   }
 }
 

@@ -5,7 +5,13 @@ const Api = require('./api')
 const apigClientFactory = require('./apigClientFactory');
 
 const config = require('./config');
-const api = new Api(AWS, apigClientFactory, config.region, config.identityPoolId);
+const api = new Api(
+  AWS,
+  apigClientFactory,
+  config.region,
+  config.identityPoolId,
+  config.uploadBucket
+);
 
 const React = require('react');
 const ReactDOM = require('react-dom');
@@ -23,10 +29,11 @@ class GeoLog extends React.Component {
     }
   }
 
-  handleFileSelect(e) {
+  handleFileSelect(file) {
     this.setState(prevState => {
+      this.props.api.upload(file);
       return {
-        files: prevState.files.concat([e])
+        files: prevState.files.concat([file])
       }
     });
   }
@@ -80,7 +87,7 @@ class FileList extends React.Component {
 
 document.addEventListener('DOMContentLoaded', () => {
   ReactDOM.render((
-      <GeoLog />
+      <GeoLog api={api} />
     ),
     document.getElementById('geolog')
   );
