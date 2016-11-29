@@ -245,14 +245,20 @@ gulp.task('lint-html', () => {
     .pipe(htmlhint.failReporter());
 });
 
-gulp.task('test-unit-coverage-setup', () => {
-  return gulp.src(['src/**/*.js', '!src/**/*.spec.js'])
+gulp.task('test-unit-front-run', () => {
+  return gulp.src(['src/front/**/*.spec.js'], {read: false})
+    .pipe(mocha({
+    }));
+})
+
+gulp.task('test-unit-back-coverage-setup', () => {
+  return gulp.src(['src/back/**/*.js', '!src/back/**/*.spec.js'])
     .pipe(istanbul())
     .pipe(istanbul.hookRequire());
 });
 
-gulp.task('test-unit-run', () => {
-  return gulp.src(['src/back/**/*.spec.js', 'src/front/**/*.spec.js'], {read: false})
+gulp.task('test-unit-back-run', () => {
+  return gulp.src(['src/back/**/*.spec.js'], {read: false})
     .pipe(mocha({
     }))
     .pipe(mocha({
@@ -584,8 +590,10 @@ gulp.task('test', gulp.parallel(
     gulp.parallel(
       gulp.series('static-analysis-run', 'static-analysis-submit-graphana'),
       gulp.series(
-        'test-unit-coverage-setup',
-        'test-unit-run',
+        gulp.parallel(
+          'test-unit-front-run',
+          gulp.series('test-unit-back-coverage-setup', 'test-unit-back-run')
+        ),
         gulp.parallel(
           'test-unit-coverage-submit-graphana',
           'test-unit-coverage-submit-coveralls'
