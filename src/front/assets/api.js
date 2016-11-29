@@ -6,7 +6,7 @@ class Api {
     apigClientFactory,
     region,
     identityPoolId,
-    uploadBucket,
+    uploadBucket
   ) {
     this.AWS = AWS;
     this.uploadBucket = uploadBucket;
@@ -42,7 +42,7 @@ class Api {
 
   upload(file) {
     this.creds.then((credentials) => {
-      const s3 = new AWS.S3({
+      const s3 = new this.AWS.S3({
         credentials: credentials
       });
       s3.putObject({

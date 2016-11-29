@@ -1,3 +1,7 @@
+parserOptions:
+  ecmaFeatures:
+    es6: true
+    jsx: true
 env:
   browser: true
 globals:
