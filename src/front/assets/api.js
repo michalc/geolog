@@ -47,7 +47,7 @@ class Api {
       });
       s3.putObject({
         Bucket: this.uploadBucket,
-        Key: 'some-key',
+        Key: credentials.identityId + '/some-key',
         Body: file
       }).promise().then(() => {
       }, () => {
