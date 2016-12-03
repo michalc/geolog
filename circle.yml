@@ -8,7 +8,7 @@ test:
   override:
     - >
       BUILD=$([ ! -z $CI_PULL_REQUEST ] && echo "pr" || echo "master")
-      npm run test-${BUILD}
+      npm run test-$BUILD
 deployment:
   production:
     branch: master
