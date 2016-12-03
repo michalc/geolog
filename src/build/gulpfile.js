@@ -580,30 +580,7 @@ gulp.task('develop',
   )
 )
 
-gulp.task('test', gulp.parallel(
-  'api-validate',
-  gulp.series(
-    gulp.parallel(
-      'lint-javascript',
-      'lint-html'
-    ),
-    gulp.parallel(
-      gulp.series('static-analysis-run', 'static-analysis-submit-graphana'),
-      gulp.series(
-        gulp.parallel(
-          'test-unit-front-run',
-          gulp.series('test-unit-back-coverage-setup', 'test-unit-back-run')
-        ),
-        gulp.parallel(
-          'test-unit-coverage-submit-graphana',
-          'test-unit-coverage-submit-coveralls'
-        )
-      ) 
-    )
-  )
-));
-
-gulp.task('test-pr', gulp.parallel(
+gulp.task('test-run', gulp.parallel(
   'api-validate',
   'lint-javascript',
   'lint-html',
@@ -612,13 +589,19 @@ gulp.task('test-pr', gulp.parallel(
   gulp.series('test-unit-back-coverage-setup', 'test-unit-back-run')
 ));
 
+gulp.task('test-submit', gulp.parallel(
+  'static-analysis-submit-graphana',
+  'test-unit-coverage-submit-graphana',
+  'test-unit-coverage-submit-coveralls'
+))
+
+gulp.task('test-pr', gulp.series(
+  'test-run'
+));
+
 gulp.task('test-master', gulp.series(
-  'test-pr',
-  gulp.parallel(
-    'static-analysis-submit-graphana',
-    'test-unit-coverage-submit-graphana',
-    'test-unit-coverage-submit-coveralls'
-  )
+  'test-run',
+  'test-submit'
 ));
 
 gulp.task('deploy-master', () => {
@@ -643,4 +626,4 @@ gulp.task('deploy-master', () => {
   'api-deploy-to-production'
 });
 
-gulp.task('default', gulp.series('test'));
+gulp.task('default', gulp.series('test-run'));

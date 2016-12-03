@@ -6,9 +6,9 @@ dependencies:
     - npm install
 test:
   override:
-    - if [[ ! -z $CI_PULL_REQUEST ]] ; then npm run test-pr; fi
-    - if [[   -z $CI_PULL_REQUEST ]] ; then npm run test-master; fi
-
+    - >
+      BUILD=$([ ! -z $CI_PULL_REQUEST ] && echo "pr" || echo "master")
+      npm run test-${BUILD}
 deployment:
   production:
     branch: master
