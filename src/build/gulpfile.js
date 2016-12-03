@@ -401,7 +401,8 @@ const assetsBuildDir = (environment) => {
 const frontBuild = (environment) => {
   return getUploadBucket().then((uploadBucket) => {
     const scripts = browserify({
-        entries: 'src/front/assets/app.jsx'
+        entries: 'src/front/assets/app.jsx',
+        extensions: ['.js', '.jsx']
       })
       .transform(transformTools.makeStringTransform("template", {
         includeExtensions: ['config.js']
