@@ -603,7 +603,25 @@ gulp.task('test', gulp.parallel(
   )
 ));
 
-gulp.task('deploy', gulp.series(
+gulp.task('test-pr', gulp.parallel(
+  'api-validate',
+  'lint-javascript',
+  'lint-html',
+  'static-analysis-run',
+  'test-unit-front-run',
+  gulp.series('test-unit-back-coverage-setup', 'test-unit-back-run')
+));
+
+gulp.task('test-master', gulp.series(
+  'test-pr',
+  gulp.parallel(
+    'static-analysis-submit-graphana',
+    'test-unit-coverage-submit-graphana',
+    'test-unit-coverage-submit-coveralls'
+  )
+));
+
+gulp.task('deploy-master', () => {
   // Need IDs of resources to deploy to
   'terraform-install',
   'terraform-init',
@@ -623,6 +641,6 @@ gulp.task('deploy', gulp.series(
   ),
   'test-e2e-run-certification',
   'api-deploy-to-production'
-));
+});
 
 gulp.task('default', gulp.series('test'));
