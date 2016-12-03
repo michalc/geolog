@@ -4,6 +4,7 @@ class Api {
   constructor(
     AWS,
     apigClientFactory,
+    config
   ) {
     this.AWS = AWS;
     this.uploadBucket = config.uploadBucket;
