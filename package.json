@@ -24,6 +24,7 @@
     "browserify-transform-tools": "^1.7.0",
     "chai": "^3.5.0",
     "concurrent-transform": "^1.0.0",
+    "css-modulesify": "^0.25.1",
     "del": "^2.2.2",
     "gulp": "github:gulpjs/gulp#4.0",
     "gulp-awspublish": "^3.3.0",

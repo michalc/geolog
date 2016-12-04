@@ -2,6 +2,8 @@
 
 const React = require('react');
 
+const styles = require('./map.css');
+
 class Map extends React.Component {
 
   initMap(mapDomElement) {
@@ -41,7 +43,7 @@ class Map extends React.Component {
 
   render() {
     return (
-      <div className="map" ref={(mapDomElement) => { this.initMap(mapDomElement) }} />
+      <div className={styles.map} ref={(mapDomElement) => { this.initMap(mapDomElement) }} />
     );
   }
 }

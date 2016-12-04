@@ -6,6 +6,7 @@ const FileButton = require('./file_button');
 const FileList = require('./file_list')
 const Map = require('./map');
 
+var styles = require('./geolog.css');
 class GeoLog extends React.Component {
 
   constructor(props) {
@@ -29,7 +30,7 @@ class GeoLog extends React.Component {
     return (
       <div className="geolog">
         {this.props.mapsLoaded && <Map mapsLoaded={this.props.mapsLoaded} />}
-        <div className="overlay">
+        <div className={styles.overlay}>
           <h1>GeoLog</h1>
           <FileButton onFileSelect={this.handleFileSelect} />
           <FileList files={this.state.files} />
