@@ -1,6 +1,7 @@
 'use strict';
 
 const React = require('react');
+const ReactDOM = require('react-dom');
 
 const styles = require('./map.css');
 
@@ -18,6 +19,11 @@ class Map extends React.Component {
       fullscreenControl: true,
       styles: [{"featureType":"administrative","elementType":"all","stylers":[{"visibility":"on"},{"saturation":-100},{"lightness":20}]},{"featureType":"road","elementType":"all","stylers":[{"visibility":"on"},{"saturation":-100},{"lightness":40}]},{"featureType":"water","elementType":"all","stylers":[{"visibility":"on"},{"saturation":-10},{"lightness":30}]},{"featureType":"landscape.man_made","elementType":"all","stylers":[{"visibility":"simplified"},{"saturation":-60},{"lightness":10}]},{"featureType":"landscape.natural","elementType":"all","stylers":[{"visibility":"simplified"},{"saturation":-60},{"lightness":60}]},{"featureType":"poi","elementType":"all","stylers":[{"visibility":"off"},{"saturation":-100},{"lightness":60}]},{"featureType":"transit","elementType":"all","stylers":[{"visibility":"off"},{"saturation":-100},{"lightness":60}]}]
     });
+
+    const element = document.createElement('div');
+    const AddTrackButton = require('./add_track_button');
+    ReactDOM.render(<AddTrackButton api={this.props.api} />, element);
+    map.controls[google.maps.ControlPosition.TOP_CENTER].push(element);
 
     // Google Maps fetches the kml from their servers,
     // so it must be on a publically accessible URL

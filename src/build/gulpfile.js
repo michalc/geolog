@@ -13,6 +13,7 @@ const del = require('del');
 const gulp = require('gulp');
 const awspublish = require('gulp-awspublish');
 const streamToBuffer = require('gulp-buffer');
+const concat = require('gulp-concat');
 const connect = require('gulp-connect');
 const coveralls = require('gulp-coveralls');
 const decompress = require('gulp-decompress');
@@ -402,7 +403,7 @@ const assetsBuildDir = (environment) => {
 const frontBuild = (environment) => {
   return getUploadBucket().then((uploadBucket) => {
 
-    const styles = new stream.PassThrough({
+    const appStyles = new stream.PassThrough({
       objectMode: true
     });
 
@@ -418,9 +419,9 @@ const frontBuild = (environment) => {
         // out the stream of css to pump through
         // rev/rev-replace
         css
-        .pipe(source('app.css'))
+        .pipe(source('ui.css'))
         .pipe(buffer())
-        .pipe(styles);
+        .pipe(appStyles);
       })
       .transform(transformTools.makeStringTransform("template", {
         includeExtensions: ['config.js']
@@ -439,6 +440,12 @@ const frontBuild = (environment) => {
       .bundle()
       .pipe(source('app.js'))
       .pipe(buffer())
+
+    // Slightly dodgy way, but it'll do
+    const vendorStyles = gulp.src(['node_modules/purecss/build/pure-min.css'])
+
+    const styles = mergeStream(vendorStyles, appStyles)
+      .pipe(concat('app.css'))
 
     const assets = mergeStream(scripts, styles)
       .pipe(rev())
