@@ -18,7 +18,7 @@ describe('geolog', () => {
 
   it('has the text geolog', () => {
     browser.url('/');
-    browser.waitUntil(function () {
+    browser.waitUntil(() => {
       return browser.getText('body').includes('Add track')
     }, 5000, 'expected text not found');
   });
