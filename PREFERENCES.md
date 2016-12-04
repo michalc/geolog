@@ -11,6 +11,7 @@
 
 - Prefer arguments passed to functions over using using state
 - Prefer having a few more variables rather than changing existing ones
+- Prefer rearchitecting a bit for now/fewer variables to be changed rather than adding a variable that gets changed
 - Prefer having a little bit of smell rather than overengineering for one or two cases
 - Prefer to refactor when realising the smell is too strong, rather than later
 - Prefer to judge all code as though it were written for the current uses, rather than giving weight to historical uses
@@ -18,6 +19,10 @@
 - Prefer to have lower cyclomatic complexity rather than slightly more efficient code
 - Prefer to have a less code in branches rather than more
 - Prefer to set a variable in branch rather than code that does something
+- Prefer to have one way of doing something rather than two. Example: getting config into code.
+- Prefer to explicitly set parameters in all cases rather overriding a default.
+- Prefer to rename variables rather than leaving unclear or inconsistent names live on in the code base.
+- Prefer to pass a few more variables around rather than saving state. E.g. in root for this, could have a `mapsLoaded` variable that is changed when the Google Maps API is loaded. However, no need for this, can just have the 2 callbacks, render(false) and render(true), and re-render the root element as needed.
 
 ## UI
 
