@@ -60,4 +60,4 @@
 
 ## Development
 
-- Prefer to have a close as possible copy of the production system in development
+- Prefer to have a close as possible copy of the production system in development (tricky with a serverless setup, but working on it...)
