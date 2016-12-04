@@ -3,8 +3,9 @@
 ## Meta preference
 
 - Prefer specifying a positive action to take rather than just something to avoid
-- Prefer to explain the reason for a preference rather than just the statement. Reason: so you can judge if in a given situation you should abide by the preference or not.
-- Prefer to treat just each situation on a case-by-case basis rather than making unbreakable rules. Reason: the author of these rules has not seen your exact situation!
+- Prefer to explain the reasons for a preference rather than just the statement. Reasons: so you can judge if in a given situation you should abide by the preference or not. Also, if can't come up with a reason, maybe it shouldn't be a preference.
+- Prefer to treat just each situation on a case-by-case basis rather than making unbreakable rules. Reason: the author of these preferences has not seen your exact situation!
+- Prefer to change these if evidence suggests they're not great rather than following them just because they are a preference.
 
 ## Code
 
@@ -26,7 +27,8 @@
 
 - Prefer to apply same preferences as to rest of code rather than special casing testing code
 - Prefer testing public behaviour over private implementation details
-- Prefer to keep in mind that a reason for unit tests are to free you to make changes in the future, rather than tying you to the implementation
+- Prefer to keep in mind that a reason for unit tests are to free you to make changes in the future, rather than to test current behaviour
+- Prefer to write code in a way that can be unit tested, even if we don't actually unit test it now.
 - Prefer quick tests over long running ones
 
 ## Build scripts
@@ -45,11 +47,12 @@
 - Prefer to be able to test changes to infrastructure before it is live rather than after (tricky and I have never acheived this!)
 - Prefer to have less stateful infratructure over more
 - Prefer to have shorter-lived state over longer-lived state
-- Prefer to let someone else maintain anything stateful (i.e. the servers) over maintaining them myself
+- Prefer to let someone else maintain anything stateful (i.e. the servers) over maintaining them myself.
 
 ## Dependencies
 
-- Prefer to have fewer over more
+- Prefer to write own code over using a dependency.
+- Prefer to write own code over hacking around a dependency's limitations.
 
 ## Security
 
