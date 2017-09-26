@@ -22,4 +22,6 @@ deployment:
   production:
     branch: master
     commands:
+      - cd src/back
+      - stack --no-terminal install --local-bin-path .
       - echo "Nothing in deployment yet"
