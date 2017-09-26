@@ -589,7 +589,7 @@ gulp.task('front-html-deploy-certification', () => {
 
 gulp.task('terraform-install', () => {
   const platform = os.platform();
-  const version = '0.7.9';
+  const version = '0.10.6';
 
   gutil.log(`Terraform installing to ${TERRAFORM}...`);
   return streamToPromise(
