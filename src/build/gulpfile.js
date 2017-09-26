@@ -602,7 +602,7 @@ gulp.task('terraform-install', () => {
 });
 
 gulp.task('terraform-init', (cb) => {
-  exec(TERRAFORM + ' remote config -backend=S3 -backend-config="bucket=geolog-state-production" -backend-config="key=geolog.tfstate" -backend-config="region=eu-west-1"', (err) => {
+  exec(TERRAFORM + ' init', (err) => {
     cb(err);
   });
 });
