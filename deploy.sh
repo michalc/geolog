@@ -1,5 +1,7 @@
 #! /bin/bash
 
+set -e
+
 SHA1=$1
 
 docker build --rm=false -t 772663561820.dkr.ecr.eu-west-1.amazonaws.com/geolog:$SHA1 src/back
