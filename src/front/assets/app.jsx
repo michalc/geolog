@@ -9,25 +9,21 @@ const api = new Api(
   config,
 );
 
-// For testing
-// api.getJob()
 (() => {
   const ReactDOM = require('react-dom');
   const React = require('react');
   const GeoLog = require('./ui/geolog');
 
-  var rootDomElement;
   var domLoaded = false;
   var mapsLoaded = false;
   var fbLoaded = false;  
 
   const render = () => {
     if (!domLoaded) return;
-    ReactDOM.render(<GeoLog api={api} mapsLoaded={mapsLoaded} fbLoaded={fbLoaded} />, rootDomElement);
+    ReactDOM.render(<GeoLog api={api} mapsLoaded={mapsLoaded} fbLoaded={fbLoaded} />, document.getElementById('app-root'));
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    rootDomElement = document.getElementById('app-root');
     domLoaded = true
     render();
   });
