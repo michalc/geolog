@@ -11,19 +11,40 @@ const api = new Api(
 
 // For testing
 // api.getJob()
-
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
   const ReactDOM = require('react-dom');
   const React = require('react');
   const GeoLog = require('./ui/geolog');
 
-  const rootDomElement = document.getElementById('app-root');
-  const render = (mapsLoaded) => {
-    ReactDOM.render(<GeoLog api={api} mapsLoaded={mapsLoaded} />, rootDomElement);
+  var rootDomElement;
+  var domLoaded = false;
+  var mapsLoaded = false;
+  var fbLoaded = false;  
+
+  const render = () => {
+    if (!domLoaded) return;
+    ReactDOM.render(<GeoLog api={api} mapsLoaded={mapsLoaded} fbLoaded={fbLoaded} />, rootDomElement);
   }
 
-  render(false);
+  document.addEventListener('DOMContentLoaded', () => {
+    rootDomElement = document.getElementById('app-root');
+    domLoaded = true
+    render();
+  });
+
   window[config.onMapsLoaded] = () => {
-    render(true);
+    mapsLoaded = true;
+    render();
   };
-});
+
+  window.fbAsyncInit = () => {
+    FB.init({
+      appId : '1207177242680218',
+      xfbml : false,
+      version : 'v2.10'
+    });
+    FB.AppEvents.logPageView();
+    fbLoaded = true;
+    render();
+  }
+})();
