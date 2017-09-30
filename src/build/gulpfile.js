@@ -28,11 +28,9 @@ const revReplace = require('gulp-rev-replace');
 const uglify = require('gulp-uglify');
 const gutil = require('gulp-util');
 const webdriver = require('gulp-webdriver');
-const zip = require('gulp-zip');
 const handlebars = require('handlebars');
 const os = require('os');
 const plato = require('plato');
-const http = require('http');
 const mergeStream = require('merge-stream');
 const net = require('net');
 const stream = require('stream');
@@ -60,12 +58,6 @@ const HOSTED_GRAPHITE_API_KEY = process.env.HOSTED_GRAPHITE_API_KEY;
 
 const TERRAFORM_DIR = 'bin'
 const TERRAFORM = 'bin/terraform';
-
-const FIRST_DEPLOYMENT = 'blue';
-const NEXT_DEPLOYMENTS = {
-  'blue': 'green',
-  'green': 'blue',
-};
 
 const BUCKETS = {
   'assets': 'assets.geolog.co',
@@ -366,34 +358,6 @@ gulp.task('front-assets-deploy-production', () => {
   return mergeStream(js, css);
 });
 
-gulp.task('front-html-deploy-certification', () => {
-  return getNextDeployment().then((deployment) => {
-    const bucket = BUCKETS[deployment];
-    gutil.log('Deploying HTML to ' + bucket);
-    const publisher = awspublish.create({
-      params: {
-        Bucket: bucket
-      }
-    });
-
-    // All files are forced since gulp-awspublish doesn't
-    // sync if there are just http header changes
-    function publish(headers) {
-      return concurrent(publisher.publish(headers, {force: true}), 8);
-    }
-
-    // Cache 1 min
-    const index = gulp.src('index.html', {cwd: siteBuildDir('production'), base: siteBuildDir('production')})
-      .pipe(publish({
-        'Cache-Control': 'max-age=' + 60 * 1 + ', public',
-        'Content-Type': 'text/html; charset=utf-8'
-      }));
-
-    return index
-      .pipe(publisher.sync());
-  });
-});
-
 gulp.task('terraform-install', () => {
   const platform = os.platform();
   const version = '0.10.6';
@@ -454,8 +418,7 @@ gulp.task('deploy-master', gulp.series(
       'front-clean',
       'front-build-production',
       gulp.parallel(
-        'front-assets-deploy-production',
-        'front-html-deploy-certification'
+        'front-assets-deploy-production'
       )
     )
   ),
