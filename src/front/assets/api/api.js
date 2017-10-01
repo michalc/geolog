@@ -92,7 +92,7 @@ class Api {
       } : {}
     }))
     creds.getPromise().then(() =>{
-      console.log('new creds', creds);
+      console.log('new creds', creds, creds.webIdentityCredentials.params.IdentityId);
       this.loginStatus = !creds.expired && creds.params.Logins['graph.facebook.com'] ? 'logged-in' : 'logged-out'
       console.log('loginstatus', this.loginStatus);
       this.stateChange();

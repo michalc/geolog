@@ -12,8 +12,9 @@ class Map extends React.Component {
 
   initMap(mapDomElement) {
     if (this.map) {
-      this.renderFbElement();
-      this.renderTrackElement();
+      if (mapDomElement) {
+        this.renderControl();
+      }
       return;
     }
     console.log('domel', mapDomElement);
@@ -29,13 +30,9 @@ class Map extends React.Component {
       styles: [{"featureType":"administrative","elementType":"all","stylers":[{"visibility":"on"},{"saturation":-100},{"lightness":20}]},{"featureType":"road","elementType":"all","stylers":[{"visibility":"on"},{"saturation":-100},{"lightness":40}]},{"featureType":"water","elementType":"all","stylers":[{"visibility":"on"},{"saturation":-10},{"lightness":30}]},{"featureType":"landscape.man_made","elementType":"all","stylers":[{"visibility":"simplified"},{"saturation":-60},{"lightness":10}]},{"featureType":"landscape.natural","elementType":"all","stylers":[{"visibility":"simplified"},{"saturation":-60},{"lightness":60}]},{"featureType":"poi","elementType":"all","stylers":[{"visibility":"off"},{"saturation":-100},{"lightness":60}]},{"featureType":"transit","elementType":"all","stylers":[{"visibility":"off"},{"saturation":-100},{"lightness":60}]}]
     });
 
-    this.trackElement = document.createElement('div');
-    this.renderTrackElement();
-    map.controls[google.maps.ControlPosition.TOP_CENTER].push(this.trackElement);
-
-    this.fbElement = document.createElement('div');
-    this.renderFbElement();
-    map.controls[google.maps.ControlPosition.TOP_CENTER].push(this.fbElement);
+    this.controlElement = document.createElement('div');
+    this.renderControl();
+    map.controls[google.maps.ControlPosition.TOP_CENTER].push(this.controlElement);
     
     // Google Maps fetches the kml from their servers,
     // so it must be on a publically accessible URL
@@ -60,13 +57,19 @@ class Map extends React.Component {
     this.map = map;
   }
 
-  renderTrackElement() {
-    ReactDOM.render(<AddTrackButton api={this.props.api} />, this.trackElement);
-  }
-
-  renderFbElement() {
-    console.log('renderingFb');
-    ReactDOM.render(<FbLogin api={this.props.api} />, this.fbElement);
+  renderControl() {
+    ReactDOM.render(
+      (
+        <div className={styles.mapControl}>
+          <div className={styles.mapControlRow}>
+            <AddTrackButton api={this.props.api} />
+            <FbLogin api={this.props.api} />
+          </div>
+        </div>
+      )
+      ,
+      this.controlElement
+    );
   }
 
   render() {

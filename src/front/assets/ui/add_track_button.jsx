@@ -18,11 +18,13 @@ class AddTrackButton extends React.Component {
 
     return (
       <div>
-        <Portal closeOnEsc closeOnOutsideClick openByClickOn={button}>
-          <Modal>
-            <FileUploader api={this.props.api} />
-          </Modal>
-        </Portal>
+        {this.props.api.getLoginStatus() == 'logged-in' ?
+          <Portal closeOnEsc closeOnOutsideClick openByClickOn={button}>
+            <Modal>
+              <FileUploader api={this.props.api} />
+            </Modal>
+          </Portal>
+        : ''}
       </div>
     );
   }
