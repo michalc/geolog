@@ -10,30 +10,40 @@ const generateProbablyUniqueGuid = () => {
 class Api {
   constructor(
     AWS,
-    config
+    config,
+    stateChange
   ) {
     this.AWS = AWS;
+    this.config = config;
     this.uploadBucket = config.uploadBucket;
+    this.stateChange = stateChange;
+    this.loginStatus = 'unknown';
+    console.log(stateChange);
 
-    const creds = new this.AWS.CognitoIdentityCredentials({
-      IdentityPoolId: config.identityPoolId
-    });
 
     AWS.config.update({
-      region: config.region,
-      credentials: creds
+      region: config.region
+      //credentials: creds
     });
 
-    this.creds = creds.getPromise().then(() => {
-      return creds;
-    });
+
+    // const creds = new this.AWS.CognitoIdentityCredentials({
+    //   IdentityPoolId: config.identityPoolId
+    // });
+
+
+
+    // this.creds = creds.getPromise().then(() => {
+    //   return creds;
+    // });
   }
 
-  // getJob() {
-  //   this.apigClient.then((client) => {
-  //     return client.apiJobsIdGet({id:1});
-  //   });
-  // }
+  setInitialLoginStatus() {
+    FB.getLoginStatus((response) => {
+      console.log('initialResponse', response);
+      this.handleFbStatusResponse(response);
+    });  
+  }
 
   upload(file) {
     this.creds.then((credentials) => {
@@ -54,6 +64,40 @@ class Api {
       }, () => {
       });  
     })
+  }
+
+  getLoginStatus() {
+    return this.loginStatus;
+  }
+
+  fbLogin() {
+    FB.login((response) => {
+      return this.handleFbStatusResponse(response);
+    });
+  }
+
+  fbLogout() {
+    FB.logout((response) => {
+      return this.handleFbStatusResponse(response);
+    });
+  }
+
+  handleFbStatusResponse(response) {
+    this.fbStatus = response;
+    console.log('response', response);
+    const creds = (new this.AWS.CognitoIdentityCredentials({
+      IdentityPoolId: this.config.identityPoolId,
+      Logins: response.authResponse && response.status == 'connected' ? {
+        'graph.facebook.com': response.authResponse.accessToken
+      } : {}
+    }))
+    creds.getPromise().then(() =>{
+      console.log('new creds', creds);
+      this.loginStatus = !creds.expired && creds.params.Logins['graph.facebook.com'] ? 'logged-in' : 'logged-out'
+      console.log('loginstatus', this.loginStatus);
+      this.stateChange();
+      return creds;
+    });
   }
 }
 

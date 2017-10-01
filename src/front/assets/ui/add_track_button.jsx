@@ -6,7 +6,7 @@ const Portal = require('react-portal');
 const FileUploader = require('./file_uploader');
 const Modal = require('./modal');
 
-const styles = require('./add_track_button.css')
+const styles = require('./button.css')
 
 class AddTrackButton extends React.Component {
   render() {
